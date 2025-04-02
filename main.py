@@ -34,8 +34,8 @@ PLATFORMS = {
     "tiktok": r"tiktok\.com|vm\.tiktok\.com",
     "twitter": r"(x\.com|twitter\.com)",
     "vk": r"vk\.com",
-    "reddit": r"reddit\.com",
-    "dzen": r"dzen\.ru",
+    "reddit": r"(reddit\.com|packaged-media\.redd\.it)",
+    #"dzen": r"dzen\.ru",
 }
 
 # Инициализация бота
@@ -55,23 +55,24 @@ def get_ydl_opts(url: str) -> dict:
     if re.search(PLATFORMS["twitter"], url, re.IGNORECASE):
         return {
             **base_opts,
-            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+            'format': 'bv*[ext=mp4][vcodec!*=av01]+ba[ext=m4a]/b[ext=mp4]/b',
             'merge_output_format': 'mp4',
         }
     
     if re.search(PLATFORMS["instagram"], url, re.IGNORECASE):
         return {
             **base_opts,
-            'format': 'best',
+            'format': 'bv*[vcodec!*=av01]+ba/b[vcodec!*=av01]',  # Жёсткий запрет AV1
             'socket_timeout': 30,
             'force_ipv4': True,
-            # 'proxy': 'http://proxy_ip:port',  # Раскомментировать при необходимости
         }
 
     return {
         **base_opts,
-        'format': 'bestvideo[height<=480]+bestaudio/best[height<=480]/best',
+        'format': 'bv*[height<=720][ext=mp4][vcodec!*=av01]+ba/b[height<=720][vcodec!*=av01]',
     }
+
+
 
 async def compress_video(input_path: str, output_path: str, crf: int = 28) -> bool:
     """Асинхронное сжатие видео через FFmpeg"""
@@ -81,7 +82,7 @@ async def compress_video(input_path: str, output_path: str, crf: int = 28) -> bo
         process = await asyncio.create_subprocess_exec(
             'ffmpeg',
             '-i', input_path,
-            '-vf', 'scale=854:480',
+            '-vf', 'scale=1280:720',
             '-vcodec', 'libx264',
             '-crf', str(crf),
             '-preset', 'fast',
