@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 load_dotenv('token.env')
 
-# Конфигурация
+# Конфигурация 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 VK_ACCESS_TOKEN = os.getenv('VK_ACCESS_TOKEN')
 VK_API_VERSION = '5.199'
