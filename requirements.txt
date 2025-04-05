@@ -1,0 +1,5 @@
+aiogram
+yt-dlp
+ffmpeg-python
+python-dotenv
+instaloader
