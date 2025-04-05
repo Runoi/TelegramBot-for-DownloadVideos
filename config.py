@@ -29,12 +29,14 @@ TWITTER_PASSWORD: str = os.getenv('TWITTER_PASSWORD', '')
 
 # Поддерживаемые платформы
 PLATFORMS = {
+    "yandex_zen": r"zen\.yandex\.ru|dzen\.ru",
     "youtube": r"(youtube\.com|youtu\.be)",
     "instagram": r"instagram\.com",
     "tiktok": r"tiktok\.com|vm\.tiktok\.com",
     "twitter": r"(x\.com|twitter\.com)",
     "vk": r"(vk\.com|vkvideo\.ru)",  # Объединенные паттерны
-    "reddit": r"(reddit\.com|packaged-media\.redd\.it)"
+    "reddit": r"(reddit\.com|packaged-media\.redd\.it)",
+    # "dzen": r"dzen\.ru/video/watch"
 }
 
 # Паттерны для определения типа контента
@@ -49,5 +51,9 @@ VK_PATTERNS = [
     '/wall'
 ]
 
-# Создаем директорию для загрузок
+INSTAGRAM_USERNAME = os.getenv('INSTAGRAM_USERNAME')
+INSTAGRAM_PASSWORD = os.getenv('INSTAGRAM_PASSWORD')
+INSTAGRAM_MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+INSTAGRAM_REQUEST_DELAY = 10  # Задержка между запросами
+MAX_RETRIES = 2  # Максимальное количество попыток
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)

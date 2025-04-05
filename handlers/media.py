@@ -1,52 +1,50 @@
-from aiogram import types
-from aiogram.types import InputMediaPhoto, BufferedInputFile
-from services.utils import download_image
-import os
-import time
+from aiogram.types import InputMediaPhoto, InputMediaVideo, Message
 import logging
-from typing import List
+from typing import List, Optional
+import os
 
 logger = logging.getLogger(__name__)
 
-async def send_media_group(message: types.Message, image_urls: List[str], video_urls: List[str]):
-    """Улучшенная отправка медиагруппы с обработкой ошибок"""
-    media = []
-    downloaded_files = []
-    
+async def send_media_group(
+    message: Message,
+    image_urls: Optional[List[str]] = None,
+    video_urls: Optional[List[str]] = None
+) -> bool:
+    """Универсальная отправка медиагруппы"""
     try:
-        # Обработка изображений
-        for i, url in enumerate(image_urls[:10]):
-            try:
-                filename = f"img_{i}_{int(time.time())}.jpg"
-                img_path = await download_image(url, filename)
-                downloaded_files.append(img_path)
-                
-                with open(img_path, 'rb') as f:
-                    media.append(InputMediaPhoto(
-                        media=BufferedInputFile(f.read(), filename=filename),
-                        caption=f"Изображение {i+1}" if i == 0 else None
-                    ))
-            except Exception as e:
-                logger.error(f"Ошибка загрузки изображения {url}: {str(e)}")
-                continue
+        if not image_urls and not video_urls:
+            logger.warning("Нет медиа для отправки")
+            return False
+
+        media = []
         
-        # Если есть медиа для отправки
-        if media:
-            await message.bot.send_media_group(
-                chat_id=message.chat.id,
-                media=media
-            )
-        else:
-            await message.answer("⚠️ Не удалось загрузить изображения")
-            
+        # Обработка изображений
+        if image_urls:
+            for url in image_urls[:10]:  # Ограничение Telegram - 10 медиа в группе
+                try:
+                    media.append(InputMediaPhoto(media=url))
+                except Exception as e:
+                    logger.error(f"Ошибка добавления фото {url}: {str(e)}")
+
+        # Обработка видео
+        if video_urls:
+            for url in video_urls[:10 - len(media)]:  # Учитываем уже добавленные фото
+                try:
+                    media.append(InputMediaVideo(media=url))
+                except Exception as e:
+                    logger.error(f"Ошибка добавления видео {url}: {str(e)}")
+
+        if not media:
+            logger.error("Не удалось подготовить ни одного медиа")
+            return False
+
+        # Отправка группой
+        await message.bot.send_media_group(
+            chat_id=message.chat.id,
+            media=media
+        )
+        return True
+
     except Exception as e:
-        logger.error(f"Ошибка отправки медиагруппы: {str(e)}")
-        await message.answer("❌ Произошла ошибка при отправке медиа")
-    finally:
-        # Очистка временных файлов
-        for file_path in downloaded_files:
-            try:
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-            except Exception as e:
-                logger.error(f"Ошибка удаления файла {file_path}: {str(e)}")
+        logger.error(f"Ошибка отправки медиагруппы: {str(e)}", exc_info=True)
+        return False

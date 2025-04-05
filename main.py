@@ -8,6 +8,7 @@ from config import BOT_TOKEN
 from handlers.base import handle_links, start
 from services.selenium import twitter_parser
 
+
 # Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
@@ -37,6 +38,7 @@ async def main():
     )
     dp = Dispatcher()
 
+   
     # Регистрация обработчиков
     dp.message.register(start, Command("start"))
     dp.message.register(handle_links)

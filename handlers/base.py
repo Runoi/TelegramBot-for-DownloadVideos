@@ -4,6 +4,7 @@ from aiogram import F
 from aiogram.filters import Command
 from aiogram.types import Message, BufferedInputFile
 from config import MAX_FILE_SIZE, PLATFORMS, TWITTER_PATTERNS, VK_PATTERNS
+from handlers.instagram import handle_instagram
 from handlers.twitter import handle_twitter_post
 from handlers.vk import handle_vk_post
 from handlers.video import handle_video_download
@@ -29,6 +30,16 @@ async def start(message: Message):
 async def handle_links(message: Message):
     url = message.text.strip()
     try:
+        # if re.search(PLATFORMS["dzen"], url, re.IGNORECASE):
+        #     await handle_video_download_dzen(message, url)
+        #     return
+        # if re.search(PLATFORMS["yandex_zen"], url, re.IGNORECASE):
+        #     await handle_zen_content(message, url)
+        #     return
+        # Обработка Instagram
+        if re.search(PLATFORMS["instagram"], url, re.IGNORECASE):
+            await handle_instagram(message, url)
+            return
         # Обработка VK
         if 'vk.com' in url:
             if any(p in url for p in ['/video', '/clip', 'video_ext.php']):

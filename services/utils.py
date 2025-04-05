@@ -100,25 +100,22 @@ async def compress_video(input_path: str, output_path: str, target_size_mb: int 
         return False
 
 async def download_image(url: str, filename: str) -> str:
-    """Универсальная загрузка изображений с обработкой ошибок"""
-    path = os.path.join(DOWNLOAD_DIR, filename)
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8'
-    }
+    """Скачивание с проверкой MIME-типа"""
+    if not url.lower().endswith(('.jpg', '.jpeg', '.png')):
+        raise ValueError("Неподдерживаемый формат изображения")
     
-    try:
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.get(url, timeout=10) as response:
-                if response.status == 200:
-                    with open(path, 'wb') as f:
-                        async for chunk in response.content.iter_chunked(1024):
-                            f.write(chunk)
-                    return path
+    path = os.path.join(DOWNLOAD_DIR, filename)
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
                 raise ValueError(f"HTTP Status: {response.status}")
-    except Exception as e:
-        logger.error(f"Image download failed: {str(e)}")
-        raise
+            content_type = response.headers.get('Content-Type', '')
+            if 'image' not in content_type:
+                raise ValueError(f"Неизвестный Content-Type: {content_type}")
+            with open(path, 'wb') as f:
+                async for chunk in response.content.iter_chunked(1024):
+                    f.write(chunk)
+    return path
 
 async def download_twitter_image(url: str, filename: str) -> str:
     """Улучшенная загрузка Twitter изображений с обходом ограничений"""
