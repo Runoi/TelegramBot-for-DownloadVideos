@@ -42,13 +42,17 @@ PLATFORMS = {
 # Паттерны для определения типа контента
 TWITTER_PATTERNS: List[str] = ['/status/', 'x.com/', 'twitter.com/']
 VK_PATTERNS = [
+    'vkvideo.ru/',
+    'vkvideo.ru',
     'vk.com/video',
     'vk.com/clip',
     'vk.com/wall',
     'vkvideo.ru/video',
     '/video-',
     '/clip-',
-    '/wall'
+    '/wall',
+    'vkvideo.ru/video-',  # для ссылок вида video-XXXXX_YYYYY
+    'vkvideo.ru/clip-'    # для ссылок вида clip-XXXXX_YYYYY
 ]
 FFMPEG_PATH = "ffmpeg"
 # Instagram Settings

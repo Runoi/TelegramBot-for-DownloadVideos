@@ -41,10 +41,18 @@ async def handle_links(message: Message):
             await handle_instagram(message, url)
             return
         # Обработка VK
-        if 'vk.com' in url:
-            if any(p in url for p in ['/video', '/clip', 'video_ext.php']):
+        if 'vk.com' in url or 'vkvideo.ru' in url:  # Проверяем оба домена
+            if any(
+                p in url for p in [
+                    '/video', 
+                    '/clip', 
+                    'video_ext.php', 
+                    'vkvideo.ru/video-',  # video-XXXXX_YYYYY
+                    'vkvideo.ru/clip-'   # clip-XXXXX_YYYYY
+                ]
+            ):
                 await handle_vk_video_download(message, url)
-            elif any(p in url for p in ['wall-', '?w=wall', '?z=wall']):  # Добавлены новые форматы
+            elif any(p in url for p in ['wall-', '?w=wall', '?z=wall']):
                 await handle_vk_post(message, url)
             else:
                 await message.answer("ℹ️ Укажите прямую ссылку на видео или пост VK")
