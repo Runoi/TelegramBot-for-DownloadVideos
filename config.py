@@ -50,10 +50,22 @@ VK_PATTERNS = [
     '/clip-',
     '/wall'
 ]
-
-INSTAGRAM_USERNAME = os.getenv('INSTAGRAM_USERNAME')
-INSTAGRAM_PASSWORD = os.getenv('INSTAGRAM_PASSWORD')
-INSTAGRAM_MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
-INSTAGRAM_REQUEST_DELAY = 10  # Задержка между запросами
+FFMPEG_PATH = "ffmpeg"
+# Instagram Settings
+INSTAGRAM_API_ENDPOINT = "https://apihut.in/api/download/videos"
+USE_INSTAGRAM_API = True  # Set to True to use API instead of Instaloader
+MAX_MERGED_VIDEO_SIZE = 50  # MB
+INSTAGRAM_API_KEY = os.getenv('INSTAGRAM_API_KEY')  # If required by your AP
+MAX_TELEGRAM_VIDEO_SIZE = 45  # MB (Telegram limit)
 MAX_RETRIES = 2  # Максимальное количество попыток
+PHOTO_DURATION = 3  # Длительность фото в объединенном видео (сек)
+# Настройки прокси
+PROXY_SETTINGS = {
+    'test_urls': [
+        "https://www.instagram.com",
+        "https://api.ipify.org?format=json",
+        "https://www.google.com"
+    ],
+    'timeout': 15
+}
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
