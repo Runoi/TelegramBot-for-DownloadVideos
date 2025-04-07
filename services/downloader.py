@@ -1,7 +1,6 @@
 import os
 import asyncio
 import logging
-import time
 import yt_dlp
 from typing import Optional
 from aiogram import Bot
@@ -21,22 +20,53 @@ class DownloadLogger:
     def error(self, msg):
         logger.error(f"YT-DLP: {msg}")
 
-class AsyncProgressHook:
-    def __init__(self, bot: Bot, chat_id: int, message_id: int):
-        self.bot = bot
-        self.chat_id = chat_id
-        self.message_id = message_id
-        self.last_update = 0
-        self.update_interval = 1  # Обновлять каждую секунду
+async def download_media(url: str, message: Message, bot: Bot, platform: str = None) -> Optional[str]:
+    """Универсальная функция загрузки с работающим прогресс-баром"""
+    progress_msg = None
+    try:
+        # Создаем сообщение о начале загрузки
+        progress_msg = await bot.send_message(
+            chat_id=message.chat.id,
+            text="⏳ Подготовка к загрузке..."
+        )
 
-    async def __call__(self, d):
-        if d['status'] == 'downloading':
-            now = time.time()
-            if now - self.last_update > self.update_interval:
-                self.last_update = now
-                try:
-                    percent = float(d.get('_percent_str', '0%').strip('%'))
-                    progress = min(int(percent / 10), 10)  # Ограничиваем до 10 шагов
+        # Создаем очередь для обмена данными о прогрессе
+        progress_queue = asyncio.Queue()
+
+        # Функция-обработчик прогресса
+        def progress_hook(d):
+            if d['status'] == 'downloading':
+                asyncio.create_task(progress_queue.put(d))
+
+        ydl_opts = {
+            'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
+            'progress_hooks': [progress_hook],
+            'logger': DownloadLogger(),
+            'retries': 3,
+            'extract_flat': False,
+            'format': 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]'
+        }
+
+        if platform == 'twitter':
+            ydl_opts.update({
+                'extractor_args': {'twitter': {'username': None, 'password': None}}
+            })
+        elif platform == 'vk':
+            ydl_opts.update({
+                'referer': 'https://vk.com/'
+            })
+
+        # Задача для обновления прогресса
+        async def update_progress():
+            last_percent = 0
+            while True:
+                d = await progress_queue.get()
+                current_percent = float(d.get('_percent_str', '0%').strip('%'))
+                
+                # Обновляем только если процент изменился
+                if current_percent > last_percent:
+                    last_percent = current_percent
+                    progress = min(int(current_percent / 10), 10)
                     progress_bar = '⬜' * progress + '⬛' * (10 - progress)
                     
                     text = (
@@ -46,57 +76,31 @@ class AsyncProgressHook:
                         f"⏱ Осталось: {d.get('_eta_str', 'N/A')}"
                     )
                     
-                    await self.bot.edit_message_text(
-                        chat_id=self.chat_id,
-                        message_id=self.message_id,
-                        text=text
-                    )
-                except Exception as e:
-                    logger.error(f"Progress update error: {e}")
+                    try:
+                        await bot.edit_message_text(
+                            chat_id=message.chat.id,
+                            message_id=progress_msg.message_id,
+                            text=text
+                        )
+                    except Exception as e:
+                        logger.error(f"Ошибка обновления прогресса: {e}")
 
-async def download_media(url: str, message: Message, bot: Bot, platform: str = None) -> Optional[str]:
-    """Универсальная функция загрузки с работающим прогресс-баром"""
-    progress_msg = None
-    try:
-        # Отправляем начальное сообщение
-        progress_msg = await bot.send_message(
-            chat_id=message.chat.id,
-            text="⏳ Начинаем загрузку..."
-        )
+        # Запускаем задачу обновления прогресса
+        progress_task = asyncio.create_task(update_progress())
 
-        # Создаем хук прогресса
-        progress_hook = AsyncProgressHook(bot, message.chat.id, progress_msg.message_id)
-        
-        ydl_opts = {
-            'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
-            'progress_hooks': [lambda d: asyncio.create_task(progress_hook(d))],
-            'logger': DownloadLogger(),
-            'retries': 3,
-            'extract_flat': False,
-            'format': 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]'
-        }
-
-        if platform == 'twitter':
-            ydl_opts.update({
-                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
-                'extractor_args': {'twitter': {'username': None, 'password': None}}
-            })
-        elif platform == 'vk':
-            ydl_opts.update({
-                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
-                'referer': 'https://vk.com/'
-            })
-
+        # Запускаем загрузку в отдельном потоке
         def sync_download():
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
                 return ydl.prepare_filename(info)
 
-        # Запускаем загрузку в отдельном потоке
         filename = await asyncio.get_event_loop().run_in_executor(
             None,
             sync_download
         )
+
+        # Отменяем задачу обновления прогресса
+        progress_task.cancel()
 
         await bot.edit_message_text(
             chat_id=message.chat.id,
@@ -107,7 +111,7 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
         return filename
 
     except Exception as e:
-        logger.error(f"Download error: {e}")
+        logger.error(f"Ошибка загрузки: {e}")
         if progress_msg:
             await bot.edit_message_text(
                 chat_id=message.chat.id,
