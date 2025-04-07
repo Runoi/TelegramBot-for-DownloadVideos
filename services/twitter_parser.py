@@ -97,7 +97,7 @@ class TwitterParser:
             media = self._extract_media()
             
             return {
-                'text':  html.escape(text),
+                'text':  text,
                 'media': media
             }
         except Exception as e:

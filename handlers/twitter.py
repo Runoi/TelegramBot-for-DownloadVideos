@@ -39,7 +39,7 @@ class TwitterHandler:
 
     async def _send_text(self, message: types.Message, text: str):
         """Отправка текста поста"""
-        safe_text = html.escape(text)
+        safe_text = text
         await message.answer(
             f"📝 <b>Текст поста:</b>\n{safe_text}",
             parse_mode="HTML"
