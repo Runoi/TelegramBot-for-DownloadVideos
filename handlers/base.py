@@ -28,7 +28,7 @@ async def handle_links(message: Message, bot: Bot):
             if any(p in url for p in ['/video', '/clip']):
                 await handle_vk_video_download(message, url, bot)
             elif any(p in url for p in ['wall-', '?w=wall']):
-                await handle_vk_post(message, url, bot)
+                await handle_vk_post(message, url)
             else:
                 await message.answer("ℹ️ Укажите прямую ссылку на видео или пост VK")
         else:

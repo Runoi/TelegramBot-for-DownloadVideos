@@ -37,7 +37,7 @@ class InstagramDownloader:
                 download_videos=True,
                 save_metadata=True,
                 filename_pattern="{shortcode}",
-                dirname_pattern=f'{DOWNLOAD_DIR}/insta',
+                dirname_pattern=f'{DOWNLOAD_DIR}',
                 post_metadata_txt_pattern="{shortcode}_caption.txt"
             )
         self._ensure_directory_exists(DOWNLOAD_DIR)
