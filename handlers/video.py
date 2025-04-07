@@ -5,6 +5,7 @@ from services.downloader import download_video
 from services.utils import compress_video
 import logging
 
+
 logger = logging.getLogger(__name__)
 
 async def handle_video_download(message: types.Message, url: str):
