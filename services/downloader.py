@@ -61,8 +61,12 @@ class SyncProgressHook:
         except Exception as e:
             logger.error(f"Progress update error: {e}")
 
+async def download_video(url: str, message: Message, bot: Bot, platform: str = None) -> Optional[str]:
+    """Универсальная функция загрузки видео (сохраняет обратную совместимость)"""
+    return await download_media(url, message, bot, platform)
+
 async def download_media(url: str, message: Message, bot: Bot, platform: str = None) -> Optional[str]:
-    """Универсальная функция загрузки медиа"""
+    """Основная функция загрузки медиа"""
     try:
         progress_msg = await bot.send_message(
             chat_id=message.chat.id,
@@ -92,9 +96,13 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
         if platform == 'twitter':
             ydl_opts.update({
                 'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-            
-                })
-            
+                'extractor_args': {
+                    'twitter': {
+                        'username': os.getenv('TWITTER_USERNAME'),
+                        'password': os.getenv('TWITTER_PASSWORD')
+                    }
+                }
+            })
         elif platform == 'youtube':
             ydl_opts.update({
                 'format': 'bv*[height<=720][ext=mp4]+ba/b[height<=720]'
@@ -142,3 +150,7 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
             )
         except:
             pass
+
+async def download_twitter_video(url: str, message: Message, bot: Bot) -> Optional[str]:
+    """Специальная функция для Twitter (для обратной совместимости)"""
+    return await download_media(url, message, bot, 'twitter')

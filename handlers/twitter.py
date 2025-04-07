@@ -1,6 +1,6 @@
 from aiogram import types, Bot
 from aiogram.types import BufferedInputFile
-from services.downloader import download_media
+from services.downloader import download_video, download_twitter_video
 from handlers.media import send_media_group
 import logging
 import os
@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 class TwitterHandler:
     async def handle_post(self, message: types.Message, url: str, bot: Bot):
         try:
-            # Получаем информацию о посте
             content = await self._get_twitter_content(url)
             if not content:
                 raise ValueError("Не удалось получить контент")
@@ -28,7 +27,7 @@ class TwitterHandler:
             await message.answer(f"❌ Ошибка: {str(e)}")
 
     async def _get_twitter_content(self, url: str) -> dict:
-        """Получаем контент поста (заглушка - реализуйте ваш парсер)"""
+        """Получаем контент поста (реализуйте ваш парсер)"""
         return {'text': 'Пример текста', 'media': {'videos': [url]}}
 
     async def _send_text(self, message: types.Message, text: str):
@@ -45,11 +44,10 @@ class TwitterHandler:
 
     async def _handle_video(self, message: types.Message, video_url: str, bot: Bot):
         try:
-            video_path = await download_media(video_url, message, bot, 'twitter')
+            video_path = await download_twitter_video(video_url, message, bot)
             if not video_path:
                 raise ValueError("Не удалось скачать видео")
 
-            # Проверка размера файла
             if os.path.getsize(video_path) > MAX_FILE_SIZE:
                 compressed_path = f"{video_path}_compressed.mp4"
                 if await compress_video(video_path, compressed_path):
@@ -60,7 +58,6 @@ class TwitterHandler:
                         os.remove(compressed_path)
                         raise ValueError("Не удалось сжать видео")
 
-            # Отправка видео
             with open(video_path, 'rb') as f:
                 await bot.send_video(
                     chat_id=message.chat.id,
