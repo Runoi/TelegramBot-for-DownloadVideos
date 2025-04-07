@@ -56,10 +56,12 @@ class AsyncProgressHook:
 
 async def download_media(url: str, message: Message, bot: Bot, platform: str = None) -> Optional[str]:
     """Универсальная функция загрузки с работающим прогресс-баром"""
+    progress_msg = None
     try:
+        # Отправляем начальное сообщение
         progress_msg = await bot.send_message(
             chat_id=message.chat.id,
-            text="🔄 Подготовка к загрузке..."
+            text="⏳ Начинаем загрузку..."
         )
 
         # Создаем хук прогресса
@@ -106,17 +108,19 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
 
     except Exception as e:
         logger.error(f"Download error: {e}")
-        await bot.edit_message_text(
-            chat_id=message.chat.id,
-            message_id=progress_msg.message_id,
-            text=f"❌ Ошибка: {str(e)}"
-        )
+        if progress_msg:
+            await bot.edit_message_text(
+                chat_id=message.chat.id,
+                message_id=progress_msg.message_id,
+                text=f"❌ Ошибка: {str(e)}"
+            )
         return None
     finally:
-        try:
-            await bot.delete_message(chat_id=progress_msg.chat.id, message_id=progress_msg.message_id)
-        except:
-            pass
+        if progress_msg:
+            try:
+                await bot.delete_message(chat_id=progress_msg.chat.id, message_id=progress_msg.message_id)
+            except:
+                pass
 
 # Функции для обратной совместимости
 async def download_video(url: str, message: Message, bot: Bot) -> Optional[str]:
