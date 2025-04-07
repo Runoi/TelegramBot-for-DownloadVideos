@@ -11,7 +11,7 @@ async def handle_video_download(message: types.Message, url: str,bot:Bot):
     """Обрабатывает запрос на скачивание видео"""
     try:
         await message.answer("⏳ Скачиваю видео...")
-        filename = await download_video(url,url,bot)
+        filename = await download_video(url,message,bot)
         
         if os.path.getsize(filename) > MAX_FILE_SIZE:
             compressed = f"{filename}_compressed.mp4"
