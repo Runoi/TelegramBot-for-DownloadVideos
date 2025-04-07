@@ -117,3 +117,13 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
             await bot.delete_message(chat_id=progress_msg.chat.id, message_id=progress_msg.message_id)
         except:
             pass
+
+# Функции для обратной совместимости
+async def download_video(url: str, message: Message, bot: Bot) -> Optional[str]:
+    return await download_media(url, message, bot)
+
+async def download_twitter_video(url: str, message: Message, bot: Bot) -> Optional[str]:
+    return await download_media(url, message, bot, 'twitter')
+
+async def download_vk_video(url: str, message: Message, bot: Bot) -> Optional[str]:
+    return await download_media(url, message, bot, 'vk')
