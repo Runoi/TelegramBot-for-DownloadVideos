@@ -7,6 +7,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
 from typing import Dict, Optional, Tuple
 import aiohttp
 from bs4 import BeautifulSoup
@@ -18,28 +19,58 @@ class TwitterService:
         self.media_pattern = re.compile(r'https://pbs\.twimg\.com/media/[^\?]+')
         self.driver = None
 
-    async def init_driver(self):
-        """Инициализация Selenium драйвера"""
+    async def _init_driver(self):
+        """Инициализация драйвера с ручным управлением"""
         options = webdriver.ChromeOptions()
+        
+        # Обязательные параметры для работы под root
         options.add_argument("--headless=new")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument("user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1")
+        
+        # Оптимальные настройки
+        options.add_argument("--window-size=1280,720")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        
+        # Указываем явные пути (проверьте актуальность!)
+        chrome_bin = "/usr/bin/google-chrome"
+        chromedriver_bin = "/usr/bin/chromedriver"
+        
+        # Проверка существования файлов
+        if not os.path.exists(chrome_bin):
+            raise FileNotFoundError(f"Chrome binary not found at {chrome_bin}")
+        if not os.path.exists(chromedriver_bin):
+            raise FileNotFoundError(f"ChromeDriver not found at {chromedriver_bin}")
+        
+        options.binary_location = chrome_bin
         
         try:
-            from webdriver_manager.chrome import ChromeDriverManager
-            from selenium.webdriver.chrome.service import Service
-            service = Service(ChromeDriverManager().install())
-            self.driver = webdriver.Chrome(service=service, options=options)
+            service = Service(
+                executable_path=chromedriver_bin,
+                service_args=['--verbose'],  # Для отладки
+            )
+            
+            self.driver = webdriver.Chrome(
+                service=service,
+                options=options,
+                service_log_path='/tmp/chromedriver.log'  # Логирование
+            )
+            
+            # Настройки времени ожидания
             self.driver.set_page_load_timeout(30)
+            self.driver.set_script_timeout(20)
+            
             return True
+            
         except Exception as e:
             logger.error(f"Driver init failed: {str(e)}")
-            return False
+            if hasattr(self, 'driver'):
+                await self._close_driver()
+            raise
 
-    async def close_driver(self):
-        """Закрытие драйвера"""
+    async def _close_driver(self):
+        """Корректное закрытие драйвера"""
         if self.driver:
             try:
                 self.driver.quit()

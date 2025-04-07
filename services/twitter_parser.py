@@ -16,23 +16,64 @@ class TwitterParser:
     def __init__(self):
         self.driver = None
 
-    async def init_driver(self):
-        """Инициализация Selenium драйвера"""
-        options = Options()
-        options.add_argument("--headless")
-        options.add_argument("--disable-gpu")
+    async def _init_driver(self):
+        """Инициализация драйвера с ручным управлением"""
+        options = webdriver.ChromeOptions()
+        
+        # Обязательные параметры для работы под root
+        options.add_argument("--headless=new")
         options.add_argument("--no-sandbox")
-        options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        options.add_argument("--disable-dev-shm-usage")
+        
+        # Оптимальные настройки
+        options.add_argument("--window-size=1280,720")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        
+        # Указываем явные пути (проверьте актуальность!)
+        chrome_bin = "/usr/bin/google-chrome"
+        chromedriver_bin = "/usr/bin/chromedriver"
+        
+        # Проверка существования файлов
+        if not os.path.exists(chrome_bin):
+            raise FileNotFoundError(f"Chrome binary not found at {chrome_bin}")
+        if not os.path.exists(chromedriver_bin):
+            raise FileNotFoundError(f"ChromeDriver not found at {chromedriver_bin}")
+        
+        options.binary_location = chrome_bin
         
         try:
-            # Явное создание Service объекта
-            service = Service(ChromeDriverManager().install())
-            self.driver = webdriver.Chrome(service=service, options=options)
+            service = Service(
+                executable_path=chromedriver_bin,
+                service_args=['--verbose'],  # Для отладки
+            )
+            
+            self.driver = webdriver.Chrome(
+                service=service,
+                options=options,
+                service_log_path='/tmp/chromedriver.log'  # Логирование
+            )
+            
+            # Настройки времени ожидания
             self.driver.set_page_load_timeout(30)
+            self.driver.set_script_timeout(20)
+            
             return True
+            
         except Exception as e:
             logger.error(f"Driver init failed: {str(e)}")
-            return False
+            if hasattr(self, 'driver'):
+                await self._close_driver()
+            raise
+    
+    async def _close_driver(self):
+        """Корректное закрытие драйвера"""
+        if self.driver:
+            try:
+                self.driver.quit()
+            except Exception as e:
+                logger.error(f"Error closing driver: {str(e)}")
+            self.driver = None
 
     async def get_twitter_content(self, url: str) -> Optional[Dict]:
         """Получение контента через Selenium"""
