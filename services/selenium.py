@@ -22,56 +22,51 @@ class TwitterParser:
         self.media_pattern = re.compile(r'https://pbs\.twimg\.com/media/[^\?]+')
 
     async def _init_driver(self):
-        """Инициализация драйвера с улучшенными настройками и обработкой ошибок"""
+        """Инициализация драйвера с ручным управлением"""
         options = webdriver.ChromeOptions()
         
-        # Основные настройки
+        # Обязательные параметры для работы под root
         options.add_argument("--headless=new")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
+        
+        # Оптимальные настройки
         options.add_argument("--window-size=1280,720")
         options.add_argument("--disable-gpu")
         options.add_argument("--disable-blink-features=AutomationControlled")
         
-        # Параметры для обхода блокировок
-        options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_experimental_option('useAutomationExtension', False)
-        
-        # Указываем явные пути (важно для работы под root)
+        # Указываем явные пути (проверьте актуальность!)
         chrome_bin = "/usr/bin/google-chrome"
-        chromedriver_bin = "/usr/bin/chromedriver"
+        chromedriver_bin = "/usr/local/bin/chromedriver"
         
-        # Проверяем существование бинарных файлов
-        if not all([os.path.exists(chrome_bin), os.path.exists(chromedriver_bin)]):
-            raise FileNotFoundError("Chrome or ChromeDriver binaries not found")
+        # Проверка существования файлов
+        if not os.path.exists(chrome_bin):
+            raise FileNotFoundError(f"Chrome binary not found at {chrome_bin}")
+        if not os.path.exists(chromedriver_bin):
+            raise FileNotFoundError(f"ChromeDriver not found at {chromedriver_bin}")
         
         options.binary_location = chrome_bin
         
         try:
-            # Инициализация драйвера с таймаутом
-            service = Service(executable_path=chromedriver_bin)
+            service = Service(
+                executable_path=chromedriver_bin,
+                service_args=['--verbose'],  # Для отладки
+            )
+            
             self.driver = webdriver.Chrome(
                 service=service,
                 options=options,
-                service_args=['--verbose'],  # Для логирования
-                desired_capabilities=options.to_capabilities()
+                service_log_path='/tmp/chromedriver.log'  # Логирование
             )
             
-            # Настройки таймаутов
+            # Настройки времени ожидания
             self.driver.set_page_load_timeout(30)
-            self.driver.set_script_timeout(30)
-            self.driver.implicitly_wait(5)
-            
-            # Дополнительные настройки
-            self.driver.execute_cdp_cmd("Network.setUserAgentOverride", {
-                "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            })
+            self.driver.set_script_timeout(20)
             
             return True
-        
+            
         except Exception as e:
-            logger.error(f"Driver initialization failed: {str(e)}")
+            logger.error(f"Driver init failed: {str(e)}")
             if hasattr(self, 'driver'):
                 await self._close_driver()
             raise
