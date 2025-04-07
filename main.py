@@ -16,7 +16,8 @@ logging.basicConfig(
     handlers=[
         logging.FileHandler("bot.log", encoding='utf-8'),
         logging.StreamHandler()
-    ]
+    ],
+    encoding='utf-8'
 )
 logger = logging.getLogger(__name__)
 
