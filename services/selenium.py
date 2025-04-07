@@ -9,7 +9,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import (TimeoutException, 
                                       NoSuchElementException, 
                                       WebDriverException)
-from webdriver_manager.chrome import ChromeDriverManager
 from typing import Dict, List, Optional, Tuple
 import logging
 import re
