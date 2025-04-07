@@ -2,7 +2,7 @@ from config import MAX_FILE_SIZE
 from services.utils import compress_video
 from services.vk_parser import vk_parser
 from services.downloader import download_vk_video
-from aiogram import types
+from aiogram import Bot, types
 import logging
 import os
 
@@ -10,12 +10,12 @@ logger = logging.getLogger(__name__)
 
 MAX_TELEGRAM_SIZE = 50 * 1024 * 1024  # 50MB в байтах
 
-async def handle_vk_video_download(message: types.Message, url: str):
+async def handle_vk_video_download(message: types.Message, url: str,bot:Bot):
     try:
         progress = await message.answer("⏳ Начинаю загрузку...")
         
         # 1. Загрузка
-        video_path = await download_vk_video(url)
+        video_path = await download_vk_video(url,message,bot)
         file_size = os.path.getsize(video_path)
         
         # 2. Проверка размера
