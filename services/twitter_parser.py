@@ -1,3 +1,4 @@
+import html
 import os
 import asyncio
 import logging
@@ -96,14 +97,14 @@ class TwitterParser:
             media = self._extract_media()
             
             return {
-                'text': text,
+                'text':  html.escape(text),
                 'media': media
             }
         except Exception as e:
             logger.error(f"Parsing error: {str(e)}")
             return None
         finally:
-            await self.close_driver()
+            await self._close_driver()
 
     def _extract_text(self) -> str:
         """Извлечение текста поста"""
