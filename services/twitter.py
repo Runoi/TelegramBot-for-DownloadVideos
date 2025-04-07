@@ -96,7 +96,7 @@ class TwitterService:
                 return nitter_data['data'], None
 
             # Если Nitter не сработал, используем Selenium
-            if not await self.init_driver():
+            if not await self._init_driver():
                 return None, "Failed to initialize browser"
 
             return await self._parse_with_selenium(url)
@@ -104,7 +104,7 @@ class TwitterService:
             logger.error(f"Twitter error: {str(e)}", exc_info=True)
             return None, str(e)
         finally:
-            await self.close_driver()
+            await self._close_driver()
 
     async def _try_nitter(self, url: str) -> Dict:
         """Попытка получить данные через Nitter"""

@@ -77,7 +77,7 @@ class TwitterParser:
 
     async def get_twitter_content(self, url: str) -> Optional[Dict]:
         """Получение контента через Selenium"""
-        if not await self.init_driver():
+        if not await self._init_driver():
             return None
 
         try:
@@ -160,13 +160,3 @@ class TwitterParser:
             logger.warning(f"Video extraction error: {str(e)}")
 
         return media
-
-    async def close_driver(self):
-        """Закрытие драйвера"""
-        if self.driver:
-            try:
-                self.driver.quit()
-            except Exception as e:
-                logger.error(f"Driver close error: {str(e)}")
-            finally:
-                self.driver = None
