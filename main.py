@@ -1,5 +1,8 @@
 import asyncio
+import io
+import locale
 import logging
+import sys
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
@@ -8,6 +11,10 @@ from config import BOT_TOKEN
 from handlers.base import handle_links, start
 from services.selenium import twitter_parser
 
+# Настройка кодировки UTF-8 для всей системы
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
 # Настройка логирования
 logging.basicConfig(
