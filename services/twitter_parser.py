@@ -1,4 +1,3 @@
-import html
 import os
 import asyncio
 import logging
@@ -17,53 +16,27 @@ class TwitterParser:
     def __init__(self):
         self.driver = None
 
-    async def _init_driver(self):
-        """Инициализация драйвера для Chromium"""
-        options = webdriver.ChromeOptions()
-        
-        # Указываем путь к бинарнику Chromium (snap-установка)
-        options.binary_location = "/snap/bin/chromium"
-        
-        # Обязательные параметры
-        options.add_argument("--headless=new")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        
-        # Оптимальные настройки
-        options.add_argument("--window-size=1280,720")
+    async def init_driver(self):
+        """Инициализация Selenium драйвера"""
+        options = Options()
+        options.add_argument("--headless")
         options.add_argument("--disable-gpu")
-        options.add_argument("--disable-blink-features=AutomationControlled")
-
+        options.add_argument("--no-sandbox")
+        options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        
         try:
-            # Для Chromium используем chromedriver вручную
-            self.driver = webdriver.Chrome(
-                service=Service(executable_path="/usr/bin/chromedriver"),
-                options=options
-            )
-            
-            # Настройки времени ожидания
+            # Явное создание Service объекта
+            service = Service(ChromeDriverManager().install())
+            self.driver = webdriver.Chrome(service=service, options=options)
             self.driver.set_page_load_timeout(30)
-            self.driver.set_script_timeout(20)
-            
             return True
-            
         except Exception as e:
-            logger.error(f"Chromium driver init failed: {str(e)}", exc_info=True)
-            if hasattr(self, 'driver') and self.driver:
-                await self._close_driver()
-    
-    async def _close_driver(self):
-        """Корректное закрытие драйвера"""
-        if self.driver:
-            try:
-                self.driver.quit()
-            except Exception as e:
-                logger.error(f"Error closing driver: {str(e)}")
-            self.driver = None
+            logger.error(f"Driver init failed: {str(e)}")
+            return False
 
     async def get_twitter_content(self, url: str) -> Optional[Dict]:
         """Получение контента через Selenium"""
-        if not await self._init_driver():
+        if not await self.init_driver():
             return None
 
         try:
@@ -83,14 +56,14 @@ class TwitterParser:
             media = self._extract_media()
             
             return {
-                'text':  text,
+                'text': text,
                 'media': media
             }
         except Exception as e:
             logger.error(f"Parsing error: {str(e)}")
             return None
         finally:
-            await self._close_driver()
+            await self.close_driver()
 
     def _extract_text(self) -> str:
         """Извлечение текста поста"""
@@ -146,3 +119,13 @@ class TwitterParser:
             logger.warning(f"Video extraction error: {str(e)}")
 
         return media
+
+    async def close_driver(self):
+        """Закрытие драйвера"""
+        if self.driver:
+            try:
+                self.driver.quit()
+            except Exception as e:
+                logger.error(f"Driver close error: {str(e)}")
+            finally:
+                self.driver = None
