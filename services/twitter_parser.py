@@ -18,10 +18,10 @@ class TwitterParser:
         self.driver = None
 
     async def _init_driver(self):
-        """Инициализация драйвера с ручным управлением"""
+        """Инициализация драйвера с автоматическим управлением ChromeDriver"""
         options = webdriver.ChromeOptions()
         
-        # Обязательные параметры для работы под root
+        # Обязательные параметры для работы в headless-режиме
         options.add_argument("--headless=new")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
@@ -30,28 +30,23 @@ class TwitterParser:
         options.add_argument("--window-size=1280,720")
         options.add_argument("--disable-gpu")
         options.add_argument("--disable-blink-features=AutomationControlled")
-        
-        # Указываем явные пути (проверьте актуальность!)
-        chrome_bin = "/usr/bin/google-chrome"
-        chromedriver_bin = "/usr/bin/chromedriver"
-        
-        # Проверка существования файлов
-        if not os.path.exists(chrome_bin):
-            raise FileNotFoundError(f"Chrome binary not found at {chrome_bin}")
-        if not os.path.exists(chromedriver_bin):
-            raise FileNotFoundError(f"ChromeDriver not found at {chromedriver_bin}")
-        
-        options.binary_location = chrome_bin
-        
+
         try:
-            service = Service(
-                executable_path=chromedriver_bin,
-                service_args=['--verbose'],  # Для отладки
-            )
-            
+            # Попытка 1: Использование webdriver-manager для автоматической установки
+            try:
+                self.driver = webdriver.Chrome(
+                    service=Service(ChromeDriverManager().install()),
+                    options=options
+                )
+                return True
+            except Exception as e:
+                logger.warning(f"Auto ChromeDriver install failed, trying manual: {str(e)}")
+
+            # Попытка 2: Ручная настройка для Chromium (если установлен через snap)
+            options.binary_location = "/snap/bin/chromium"  # Путь к Chromium
             self.driver = webdriver.Chrome(
-                service=service,
-                options=options,
+                service=Service(executable_path="/usr/bin/chromedriver"),
+                options=options
             )
             
             # Настройки времени ожидания
@@ -61,8 +56,8 @@ class TwitterParser:
             return True
             
         except Exception as e:
-            logger.error(f"Driver init failed: {str(e)}")
-            if hasattr(self, 'driver'):
+            logger.error(f"Driver init failed: {str(e)}", exc_info=True)
+            if hasattr(self, 'driver') and self.driver:
                 await self._close_driver()
             raise
     
