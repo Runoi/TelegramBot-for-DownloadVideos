@@ -51,7 +51,6 @@ class TwitterParser:
             self.driver = webdriver.Chrome(
                 service=service,
                 options=options,
-                service_log_path='/tmp/chromedriver.log'  # Логирование
             )
             
             # Настройки времени ожидания
