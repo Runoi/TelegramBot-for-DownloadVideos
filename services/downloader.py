@@ -1,6 +1,7 @@
 import os
 import asyncio
 import logging
+import time
 import yt_dlp
 from typing import Optional
 from aiogram import Bot
@@ -20,27 +21,56 @@ class DownloadLogger:
     def error(self, msg):
         logger.error(f"YT-DLP: {msg}")
 
+class SyncProgressHook:
+    def __init__(self, bot: Bot, chat_id: int, message_id: int):
+        self.bot = bot
+        self.chat_id = chat_id
+        self.message_id = message_id
+        self.last_update = 0
+        self.loop = asyncio.get_event_loop()
+
+    def __call__(self, d):
+        if d['status'] == 'downloading':
+            now = time.time()
+            if now - self.last_update > 3:
+                self.last_update = now
+                asyncio.run_coroutine_threadsafe(
+                    self._update_progress(d),
+                    self.loop
+                )
+
+    async def _update_progress(self, d):
+        try:
+            percent = float(d['_percent_str'].strip('%'))
+            progress = int(percent / 10)
+            progress_bar = '⬜' * progress + '⬛' * (10 - progress)
+            
+            text = (
+                f"⏳ Загрузка видео...\n\n"
+                f"{progress_bar} {d['_percent_str']}\n"
+                f"🚀 Скорость: {d['_speed_str']}\n"
+                f"⏱ Осталось: {d['_eta_str']}"
+            )
+            
+            await self.bot.edit_message_text(
+                chat_id=self.chat_id,
+                message_id=self.message_id,
+                text=text
+            )
+        except Exception as e:
+            logger.error(f"Progress update error: {e}")
+
 async def download_media(url: str, message: Message, bot: Bot, platform: str = None) -> Optional[str]:
-    """Универсальная функция загрузки с работающим прогресс-баром"""
-    progress_msg = None
+    """Универсальная функция загрузки"""
     try:
-        # Создаем сообщение о начале загрузки
         progress_msg = await bot.send_message(
             chat_id=message.chat.id,
-            text="⏳ Подготовка к загрузке..."
+            text="🔄 Подготовка к загрузке..."
         )
-
-        # Создаем очередь для обмена данными о прогрессе
-        progress_queue = asyncio.Queue()
-
-        # Функция-обработчик прогресса
-        def progress_hook(d):
-            if d['status'] == 'downloading':
-                asyncio.create_task(progress_queue.put(d))
 
         ydl_opts = {
             'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
-            'progress_hooks': [progress_hook],
+            'progress_hooks': [SyncProgressHook(bot, message.chat.id, progress_msg.message_id)],
             'logger': DownloadLogger(),
             'retries': 3,
             'extract_flat': False,
@@ -49,46 +79,15 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
 
         if platform == 'twitter':
             ydl_opts.update({
+                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
                 'extractor_args': {'twitter': {'username': None, 'password': None}}
             })
         elif platform == 'vk':
             ydl_opts.update({
+                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
                 'referer': 'https://vk.com/'
             })
 
-        # Задача для обновления прогресса
-        async def update_progress():
-            last_percent = 0
-            while True:
-                d = await progress_queue.get()
-                current_percent = float(d.get('_percent_str', '0%').strip('%'))
-                
-                # Обновляем только если процент изменился
-                if current_percent > last_percent:
-                    last_percent = current_percent
-                    progress = min(int(current_percent / 10), 10)
-                    progress_bar = '⬜' * progress + '⬛' * (10 - progress)
-                    
-                    text = (
-                        f"⏳ Загрузка видео...\n\n"
-                        f"{progress_bar} {d.get('_percent_str', '0%')}\n"
-                        f"🚀 Скорость: {d.get('_speed_str', 'N/A')}\n"
-                        f"⏱ Осталось: {d.get('_eta_str', 'N/A')}"
-                    )
-                    
-                    try:
-                        await bot.edit_message_text(
-                            chat_id=message.chat.id,
-                            message_id=progress_msg.message_id,
-                            text=text
-                        )
-                    except Exception as e:
-                        logger.error(f"Ошибка обновления прогресса: {e}")
-
-        # Запускаем задачу обновления прогресса
-        progress_task = asyncio.create_task(update_progress())
-
-        # Запускаем загрузку в отдельном потоке
         def sync_download():
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
@@ -99,32 +98,27 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
             sync_download
         )
 
-        # Отменяем задачу обновления прогресса
-        progress_task.cancel()
-
         await bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=progress_msg.message_id,
-            text="✅ Загрузка завершена! Обработка видео..."
+            text="✅ Загрузка завершена!"
         )
 
         return filename
 
     except Exception as e:
-        logger.error(f"Ошибка загрузки: {e}")
-        if progress_msg:
-            await bot.edit_message_text(
-                chat_id=message.chat.id,
-                message_id=progress_msg.message_id,
-                text=f"❌ Ошибка: {str(e)}"
-            )
+        logger.error(f"Download error: {e}")
+        await bot.edit_message_text(
+            chat_id=message.chat.id,
+            message_id=progress_msg.message_id,
+            text=f"❌ Ошибка: {str(e)}"
+        )
         return None
     finally:
-        if progress_msg:
-            try:
-                await bot.delete_message(chat_id=progress_msg.chat.id, message_id=progress_msg.message_id)
-            except:
-                pass
+        try:
+            await bot.delete_message(progress_msg.chat.id, progress_msg.message_id)
+        except:
+            pass
 
 # Функции для обратной совместимости
 async def download_video(url: str, message: Message, bot: Bot) -> Optional[str]:
