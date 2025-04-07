@@ -34,9 +34,8 @@ class TwitterHandler:
             await self._handle_media(message, content.get('media', {}))
             
         except Exception as e:
-            error_msg = f"Ошибка: {str(e)}"
-            logger.error(error_msg.encode('utf-8').decode('latin-1'))  # Фикс кодировки
-            await message.answer(error_msg, parse_mode=None)
+            logger.error(f"Twitter error: {str(e)}", exc_info=True)
+            await message.answer(f"❌ Ошибка: {str(e)}")
 
     async def _send_text(self, message: types.Message, text: str):
         """Отправка текста поста"""
