@@ -3,15 +3,6 @@ from bs4 import BeautifulSoup
 from typing import Dict, List, Optional
 import logging
 
-# Настройка логгирования
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("video_bot.log"),
-        logging.StreamHandler()
-    ]
-)
 logger = logging.getLogger(__name__)
 
 async def try_nitter(url: str) -> Optional[Dict]:
