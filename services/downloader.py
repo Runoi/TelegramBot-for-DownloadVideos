@@ -1,5 +1,4 @@
 import os
-import re
 import asyncio
 import logging
 import time
@@ -7,7 +6,7 @@ import yt_dlp
 from typing import Optional
 from aiogram import Bot
 from aiogram.types import Message
-from config import DOWNLOAD_DIR, MAX_FILE_SIZE
+from config import DOWNLOAD_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -61,12 +60,8 @@ class SyncProgressHook:
         except Exception as e:
             logger.error(f"Progress update error: {e}")
 
-async def download_video(url: str, message: Message, bot: Bot, platform: str = None) -> Optional[str]:
-    """Универсальная функция загрузки видео (сохраняет обратную совместимость)"""
-    return await download_media(url, message, bot, platform)
-
 async def download_media(url: str, message: Message, bot: Bot, platform: str = None) -> Optional[str]:
-    """Основная функция загрузки медиа"""
+    """Универсальная функция загрузки"""
     try:
         progress_msg = await bot.send_message(
             chat_id=message.chat.id,
@@ -78,39 +73,18 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
             'progress_hooks': [SyncProgressHook(bot, message.chat.id, progress_msg.message_id)],
             'logger': DownloadLogger(),
             'retries': 3,
-            'fragment_retries': 3,
-            'skip_unavailable_fragments': True,
-            'noplaylist': True,
-            'merge_output_format': 'mp4',
-            'windows_filenames': True,
-            'restrictfilenames': True,
-            'nooverwrites': True,
-            'continuedl': True,
-            'concurrent_fragment_downloads': 2,
-            'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                'Accept-Language': 'en-US,en;q=0.9'
-            }
+            'extract_flat': False
         }
 
         if platform == 'twitter':
             ydl_opts.update({
-                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-                'extractor_args': {
-                    'twitter': {
-                        'username': os.getenv('TWITTER_USERNAME'),
-                        'password': os.getenv('TWITTER_PASSWORD')
-                    }
-                }
-            })
-        elif platform == 'youtube':
-            ydl_opts.update({
-                'format': 'bv*[height<=720][ext=mp4]+ba/b[height<=720]'
+                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
+                'extractor_args': {'twitter': {'username': None, 'password': None}}
             })
         elif platform == 'vk':
             ydl_opts.update({
-                'referer': 'https://vk.com/',
-                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
+                'referer': 'https://vk.com/'
             })
 
         def sync_download():
@@ -131,26 +105,26 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
 
         return filename
 
-    except yt_dlp.DownloadError as e:
-        logger.error(f"Download failed: {e}")
+    except Exception as e:
+        logger.error(f"Download error: {e}")
         await bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=progress_msg.message_id,
-            text=f"❌ Ошибка загрузки: {str(e)}"
+            text=f"❌ Ошибка: {str(e)}"
         )
-        return None
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
         return None
     finally:
         try:
-            await bot.delete_message(
-                chat_id=message.chat.id,
-                message_id=progress_msg.message_id
-            )
+            await bot.delete_message(progress_msg.chat.id, progress_msg.message_id)
         except:
             pass
 
+# Функции для обратной совместимости
+async def download_video(url: str, message: Message, bot: Bot) -> Optional[str]:
+    return await download_media(url, message, bot)
+
 async def download_twitter_video(url: str, message: Message, bot: Bot) -> Optional[str]:
-    """Специальная функция для Twitter (для обратной совместимости)"""
     return await download_media(url, message, bot, 'twitter')
+
+async def download_vk_video(url: str, message: Message, bot: Bot) -> Optional[str]:
+    return await download_media(url, message, bot, 'vk')
