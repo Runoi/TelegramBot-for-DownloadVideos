@@ -1,4 +1,4 @@
-from aiogram import types
+from aiogram import Bot, types
 import os
 from config import MAX_FILE_SIZE
 from services.downloader import download_video
@@ -7,11 +7,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-async def handle_video_download(message: types.Message, url: str):
+async def handle_video_download(message: types.Message, url: str,bot:Bot):
     """Обрабатывает запрос на скачивание видео"""
     try:
         await message.answer("⏳ Скачиваю видео...")
-        filename = await download_video(url)
+        filename = await download_video(url,url,bot)
         
         if os.path.getsize(filename) > MAX_FILE_SIZE:
             compressed = f"{filename}_compressed.mp4"
