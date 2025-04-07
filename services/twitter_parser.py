@@ -18,10 +18,13 @@ class TwitterParser:
         self.driver = None
 
     async def _init_driver(self):
-        """Инициализация драйвера с автоматическим управлением ChromeDriver"""
+        """Инициализация драйвера для Chromium"""
         options = webdriver.ChromeOptions()
         
-        # Обязательные параметры для работы в headless-режиме
+        # Указываем путь к бинарнику Chromium (snap-установка)
+        options.binary_location = "/snap/bin/chromium"
+        
+        # Обязательные параметры
         options.add_argument("--headless=new")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
@@ -32,18 +35,7 @@ class TwitterParser:
         options.add_argument("--disable-blink-features=AutomationControlled")
 
         try:
-            # Попытка 1: Использование webdriver-manager для автоматической установки
-            try:
-                self.driver = webdriver.Chrome(
-                    service=Service(ChromeDriverManager().install()),
-                    options=options
-                )
-                return True
-            except Exception as e:
-                logger.warning(f"Auto ChromeDriver install failed, trying manual: {str(e)}")
-
-            # Попытка 2: Ручная настройка для Chromium (если установлен через snap)
-            options.binary_location = "/snap/bin/chromium"  # Путь к Chromium
+            # Для Chromium используем chromedriver вручную
             self.driver = webdriver.Chrome(
                 service=Service(executable_path="/usr/bin/chromedriver"),
                 options=options
@@ -56,10 +48,9 @@ class TwitterParser:
             return True
             
         except Exception as e:
-            logger.error(f"Driver init failed: {str(e)}", exc_info=True)
+            logger.error(f"Chromium driver init failed: {str(e)}", exc_info=True)
             if hasattr(self, 'driver') and self.driver:
                 await self._close_driver()
-            raise
     
     async def _close_driver(self):
         """Корректное закрытие драйвера"""
