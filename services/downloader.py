@@ -73,7 +73,8 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
             'progress_hooks': [SyncProgressHook(bot, message.chat.id, progress_msg.message_id)],
             'logger': DownloadLogger(),
             'retries': 3,
-            'extract_flat': False
+            'extract_flat': False,
+            'format': 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]'
         }
 
         if platform == 'twitter':
