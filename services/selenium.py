@@ -37,7 +37,7 @@ class TwitterParser:
         
         # Указываем явные пути (проверьте актуальность!)
         chrome_bin = "/usr/bin/google-chrome"
-        chromedriver_bin = "/usr/local/bin/chromedriver"
+        chromedriver_bin = "/usr/bin/chromedriver"
         
         # Проверка существования файлов
         if not os.path.exists(chrome_bin):
