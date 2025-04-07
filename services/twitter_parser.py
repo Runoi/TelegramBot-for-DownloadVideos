@@ -27,7 +27,7 @@ class TwitterParser:
         
         try:
             # Явное создание Service объекта
-            service = Service(executable_path='/usr/local/bin/chromedriver')
+            service = Service(executable_path='/usr/local/bin/chromedriver',service_args=['--verbose'])
             self.driver = webdriver.Chrome(service=service, options=options)
             self.driver.set_page_load_timeout(30)
             return True
