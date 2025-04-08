@@ -79,16 +79,17 @@ class InstagramDownloader:
             text_file = await self._extract_post_text(url)
             if text_file:
                 result['text'].append(text_file)
-            
-            # Объединение медиа если требуется
-            if merge_all and len(media_files) > 1:
-                merged_file = await self._merge_all_media(media_files)
-                if merged_file:
-                    # Удаляем оригиналы и добавляем объединенный файл
-                    for f in media_files:
-                        await self._safe_remove_file(f)
-                    result['media'] = [merged_file]
-                    status += " (media merged)"
+            if '/stories/' in url:
+                merge_all = True
+                # Объединение медиа если требуется
+                if merge_all and len(media_files) > 1:
+                    merged_file = await self._merge_all_media(media_files)
+                    if merged_file:
+                        # Удаляем оригиналы и добавляем объединенный файл
+                        for f in media_files:
+                            await self._safe_remove_file(f)
+                        result['media'] = [merged_file]
+                        status += " (media merged)"
             
             # Сжатие видео если нужно
             final_media = []

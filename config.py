@@ -62,7 +62,10 @@ MAX_MERGED_VIDEO_SIZE = 50  # MB
 INSTAGRAM_API_KEY = os.getenv('INSTAGRAM_API_KEY')  # If required by your AP
 MAX_TELEGRAM_VIDEO_SIZE = 45  # MB (Telegram limit)
 MAX_RETRIES = 2  # Максимальное количество попыток
+MAX_PARALLEL_MERGES = 2  # Безопасное значение
+MAX_API_REQUESTS_PER_MIN = 30    # Лимит запросов к Instagram API
 PHOTO_DURATION = 3  # Длительность фото в объединенном видео (сек)
+MAX_BOT_REQUESTS_PER_SEC = 20  # Лимит Telegram API
 # Настройки прокси
 PROXY_SETTINGS = {
     'test_urls': [

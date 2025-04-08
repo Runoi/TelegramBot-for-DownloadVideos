@@ -3,6 +3,7 @@ from aiogram import F, Bot
 from aiogram.filters import Command
 from aiogram.types import Message
 from config import PLATFORMS, TWITTER_PATTERNS, VK_PATTERNS
+from handlers.instagram import handle_instagram
 from handlers.twitter import handle_twitter_post
 from handlers.vk import handle_vk_post
 from handlers.video import handle_video_download
@@ -31,6 +32,9 @@ async def handle_links(message: Message, bot: Bot):
                 await handle_vk_post(message, url)
             else:
                 await message.answer("ℹ️ Укажите прямую ссылку на видео или пост VK")
+        elif re.search(PLATFORMS["instagram"], url, re.IGNORECASE):
+            await handle_instagram(message, url)
+            return
         else:
             await handle_video_download(message, url, bot)
     except Exception as e:
