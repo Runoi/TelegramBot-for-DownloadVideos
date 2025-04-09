@@ -57,8 +57,7 @@ class TwitterService:
             
             self.driver = webdriver.Chrome(
                 service=service,
-                options=options,
-                service_log_path='/tmp/chromedriver.log'  # Логирование
+                options=options     
             )
             
             # Настройки времени ожидания
