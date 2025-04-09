@@ -2,6 +2,7 @@ import os
 import asyncio
 import logging
 import time
+import aiohttp
 import yt_dlp
 from typing import Optional
 from aiogram import Bot
@@ -59,6 +60,46 @@ class SyncProgressHook:
             )
         except Exception as e:
             logger.error(f"Progress update error: {e}")
+
+async def download_image(url: str) -> Optional[str]:
+    """Асинхронная загрузка изображения из Twitter"""
+    try:
+        if not url or 'pbs.twimg.com' not in url:
+            return None
+
+        # Создаем директорию для загрузок, если ее нет
+        os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
+        # Генерируем уникальное имя файла
+        filename = os.path.join(DOWNLOAD_DIR, f"twitter_img_{int(time.time())}.jpg")
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    with open(filename, 'wb') as f:
+                        while True:
+                            chunk = await response.content.read(1024)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                    return filename
+                else:
+                    logger.error(f"Failed to download image. Status: {response.status}")
+                    return None
+
+    except Exception as e:
+        logger.error(f"Image download error: {str(e)}")
+        # Удаляем частично загруженный файл, если он существует
+        if 'filename' in locals() and os.path.exists(filename):
+            try:
+                os.remove(filename)
+            except:
+                pass
+        return None            
 
 async def download_media(url: str, message: Message, bot: Bot, platform: str = None) -> Optional[str]:
     """Универсальная функция загрузки"""

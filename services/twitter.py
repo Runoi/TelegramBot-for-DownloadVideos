@@ -11,6 +11,9 @@ from selenium.webdriver.chrome.service import Service
 from typing import Dict, Optional, Tuple
 import aiohttp
 from bs4 import BeautifulSoup
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver import Chrome
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +49,7 @@ class TwitterService:
         options.binary_location = chrome_bin
         
         try:
+             # Автоматическая установка и настройка ChromeDriver
             service = Service(
                 executable_path=chromedriver_bin,
                 service_args=['--verbose'],  # Для отладки
@@ -80,17 +84,20 @@ class TwitterService:
 
     @lru_cache(maxsize=100)
     def normalize_image_url(self, url: str) -> str:
-        """Нормализация URL изображений Twitter"""
-        if not url or 'pbs.twimg.com' not in url:
+        """Нормализация URL только для медиа-изображений"""
+        if not url or '/media/' not in url:
             return url
-        
+            
         base = url.split('?')[0]
+        if not base.endswith(('jpg', 'png', 'jpeg')):
+            return url
+            
         return f"{base}?name=orig"
 
     async def get_twitter_content(self, url: str) -> Tuple[Optional[Dict], Optional[str]]:
-        """Основной метод получения контента"""
+        """Получение контента с правильным определением типа"""
         try:
-            # Сначала пробуем через Nitter
+            # Сначала пробуем Nitter
             nitter_data = await self._try_nitter(url)
             if nitter_data['success']:
                 return nitter_data['data'], None
@@ -99,10 +106,42 @@ class TwitterService:
             if not await self._init_driver():
                 return None, "Failed to initialize browser"
 
-            return await self._parse_with_selenium(url)
+            self.driver.get(url)
+            WebDriverWait(self.driver, 30).until(
+                EC.presence_of_element_located((By.XPATH, '//article')))
+            
+            # Определяем тип контента
+            post_type = 'text'
+            media = {'images': [], 'videos': []}
+            
+            # Проверяем наличие видео
+            video_elements = self.driver.find_elements(By.XPATH, '//video | //div[@data-testid="videoPlayer"]')
+            if video_elements:
+                post_type = 'video'
+                media['videos'].append(url)
+            
+            # Если не видео, проверяем изображения
+            if post_type != 'video':
+                img_elements = self.driver.find_elements(
+                    By.XPATH, '//div[@data-testid="tweetPhoto"]//img | //img[contains(@src, "pbs.twimg.com/media/")]')
+                if img_elements:
+                    post_type = 'photo'
+                    for img in img_elements:
+                        if src := img.get_attribute('src'):
+                            media['images'].append(self.normalize_image_url(src))
+            
+            # Получаем текст
+            text_elements = self.driver.find_elements(By.XPATH, '//div[@data-testid="tweetText"]')
+            text = "\n".join([el.text for el in text_elements if el.text]) or None
+
+            return {
+                'text': text,
+                'type': post_type,
+                'media': media
+            }, None
+
         except Exception as e:
-            logger.error(f"Twitter error: {str(e)}", exc_info=True)
-            return None, str(e)
+            return None, f"Error: {str(e)}"
         finally:
             await self._close_driver()
 
@@ -165,20 +204,30 @@ class TwitterService:
         except Exception as e:
             return None, f"Selenium parsing error: {str(e)}"
 
-    async def _extract_media(self) -> Dict:
-        """Извлечение медиа"""
+    def _extract_media(self) -> Dict:
+        """Извлечение медиа с исключением аватарок"""
         media = {'images': [], 'videos': []}
         
-        # Изображения
-        img_elements = self.driver.find_elements(By.XPATH, '//img[contains(@src, "twimg.com")]')
+        # Изображения только из медиа-контента
+        img_elements = self.driver.find_elements(
+            By.XPATH, 
+            '//div[@data-testid="tweetPhoto"]//img | '
+            '//img[contains(@src, "pbs.twimg.com/media/")]'
+        )
+        
         for img in img_elements:
             if src := img.get_attribute('src'):
-                media['images'].append(self.normalize_image_url(src))
+                if '/media/' in src:  # Только медиа из поста
+                    media['images'].append(self.normalize_image_url(src))
         
         # Видео
-        video_elements = self.driver.find_elements(By.XPATH, '//video | //div[@data-testid="videoPlayer"]')
+        video_elements = self.driver.find_elements(
+            By.XPATH, 
+            '//video | //div[@data-testid="videoPlayer"]'
+        )
+        
         for video in video_elements:
-            if src := video.get_attribute('src') or video.get_attribute('data-video-url'):
+            if src := video.get_attribute('src') or video.get_attribute('poster'):
                 media['videos'].append(src.split('?')[0])
         
         return media
