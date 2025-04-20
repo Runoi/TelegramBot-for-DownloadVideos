@@ -106,7 +106,7 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
     try:
         progress_msg = await bot.send_message(
             chat_id=message.chat.id,
-            text="🔄 Подготовка к загрузке..."
+            text="🔄 Подготовка к загрузке (до 500 сек.)"
         )
 
         ydl_opts = {

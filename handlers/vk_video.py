@@ -12,7 +12,7 @@ MAX_TELEGRAM_SIZE = 50 * 1024 * 1024  # 50MB в байтах
 
 async def handle_vk_video_download(message: types.Message, url: str,bot:Bot):
     try:
-        progress = await message.answer("⏳ Начинаю загрузку...")
+        progress = await message.answer("⏳ Подготовка к загрузке (до 500 сек.)...")
         
         # 1. Загрузка
         video_path = await download_vk_video(url,message,bot)
@@ -34,9 +34,9 @@ async def handle_vk_video_download(message: types.Message, url: str,bot:Bot):
         # 3. Отправка
         await progress.edit_text("📤 Отправляю видео...")
         with open(video_path, 'rb') as f:
-            await message.answer_video(
+            await bot.send_video(chat_id=message.chat.id,
                 video=types.BufferedInputFile(f.read(), filename="video.mp4"),
-                caption="Ваше видео готово!"
+                caption=f"Ваше видео готово!@{bot.get_my_name()}"
             )
             
     except Exception as e:

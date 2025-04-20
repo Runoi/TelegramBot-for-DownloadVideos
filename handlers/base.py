@@ -27,15 +27,16 @@ async def handle_links(message: Message, bot: Bot):
             await handle_twitter_post(message, url, bot)
         elif 'vk.com' in url or 'vkvideo.ru' in url:
             if any(p in url for p in ['/video', '/clip']):
+                print('VKKK')
                 await handle_vk_video_download(message, url, bot)
             elif any(p in url for p in ['wall-', '?w=wall']):
                 await handle_vk_post(message, url)
             else:
                 await message.answer("ℹ️ Укажите прямую ссылку на видео или пост VK")
         elif re.search(PLATFORMS["instagram"], url, re.IGNORECASE):
-            await handle_instagram(message, url)
+            await handle_instagram(message, url,bot)
             return
-        else:
+        elif 'youtube.com/shorts/' in url:
             await handle_video_download(message, url, bot)
     except Exception as e:
         logger.error(f"Ошибка обработки ссылки: {str(e)}", exc_info=True)

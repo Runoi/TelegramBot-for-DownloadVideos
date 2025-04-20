@@ -151,6 +151,8 @@ class InstagramDownloader:
                         '-c:v', 'libx264',
                         '-t', str(PHOTO_DURATION),
                         '-pix_fmt', 'yuv420p',
+                        '-crf', '28',  # Немного больше сжатия для ускорения
+                        '-movflags', '+faststart',
                         '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
                         '-y',
                         segment_path
@@ -160,6 +162,8 @@ class InstagramDownloader:
                         FFMPEG_PATH,
                         '-i', self._safe_path(file),
                         '-c', 'copy',
+                        '-crf', '28',  # Немного больше сжатия для ускорения
+                        '-movflags', '+faststart',
                         '-y',
                         segment_path
                     ]
@@ -199,6 +203,7 @@ class InstagramDownloader:
                 '-safe', '0',
                 '-i', list_file,  # Абсолютный путь к списку
                 '-c', 'copy',
+                '-crf', '28',  # Немного больше сжатия для ускорения
                 '-movflags', '+faststart',
                 '-y',
                 output_file  # Абсолютный путь к выходному файлу
@@ -376,8 +381,9 @@ class InstagramDownloader:
             try:
                 if self.use_api:
                     result = await self._download_via_api(url)
-                    if not result[0]:
-                        result = await self._download_via_instaloader(url)
+                    print(result)
+                    # if not result[0]:
+                    #     result = await self._download_via_instaloader(url)
                 else:
                     result = await self._download_via_instaloader(url)
                 
