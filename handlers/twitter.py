@@ -131,7 +131,7 @@ class TwitterHandler:
                 await bot.send_video(
                     chat_id=message.chat.id,
                     video=BufferedInputFile(f.read(), "twitter_video.mp4"),
-                    caption="🎥 Видео из Twitter",
+                    caption="🎥 Видео из Twitter, @prorusaver_bot",
                     supports_streaming=True
                 )
 

@@ -36,7 +36,7 @@ async def handle_vk_video_download(message: types.Message, url: str,bot:Bot):
         with open(video_path, 'rb') as f:
             await bot.send_video(chat_id=message.chat.id,
                 video=types.BufferedInputFile(f.read(), filename="video.mp4"),
-                caption=f"Ваше видео готово!@{bot.get_my_name()}"
+                caption=f"Ваше видео готово! @prorusaver_bot"
             )
             
     except Exception as e:

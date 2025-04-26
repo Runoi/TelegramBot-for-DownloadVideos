@@ -27,7 +27,6 @@ async def handle_links(message: Message, bot: Bot):
             await handle_twitter_post(message, url, bot)
         elif 'vk.com' in url or 'vkvideo.ru' in url:
             if any(p in url for p in ['/video', '/clip']):
-                print('VKKK')
                 await handle_vk_video_download(message, url, bot)
             elif any(p in url for p in ['wall-', '?w=wall']):
                 await handle_vk_post(message, url)
