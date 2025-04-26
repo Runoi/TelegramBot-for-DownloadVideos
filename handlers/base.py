@@ -37,6 +37,8 @@ async def handle_links(message: Message, bot: Bot):
             return
         elif 'youtube.com/shorts/' in url:
             await handle_video_download(message, url, bot)
+        elif 'tiktok.com' in url:
+            await handle_video_download(message, url, bot)
     except Exception as e:
         logger.error(f"Ошибка обработки ссылки: {str(e)}", exc_info=True)
         await message.answer(f"⚠️ Ошибка: {str(e)}")

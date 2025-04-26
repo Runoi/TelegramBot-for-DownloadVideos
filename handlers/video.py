@@ -22,7 +22,7 @@ async def handle_video_download(message: types.Message, url: str,bot:Bot):
         with open(filename, 'rb') as f:
             await message.answer_video(
                 video=types.BufferedInputFile(f.read(), filename=os.path.basename(filename)),
-                caption="Ваше видео готово!"
+                caption="Ваше видео готово! @prorusaver_bot"
             )
         os.remove(filename)
         
