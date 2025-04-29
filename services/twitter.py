@@ -105,12 +105,17 @@ class TwitterService:
             if not await self._init_driver():
                 return None, "Failed to initialize browser"
 
+            await asyncio.sleep(1)  # Небольшая пауза
+            
+            # Загружаем страницу
             self.driver.get(url)
             WebDriverWait(self.driver, 30).until(
                 EC.presence_of_element_located((By.XPATH, '//article')))
             
-            # Получаем медиа и текст
-            media = await self._extract_media()
+            # Получаем медиа
+            media = self._extract_media()  # Убрал await, так как это синхронный метод
+            
+            # Получаем текст
             text_elements = self.driver.find_elements(By.XPATH, '//div[@data-testid="tweetText"]')
             text = "\n".join([el.text for el in text_elements if el.text]) or None
 
@@ -128,6 +133,7 @@ class TwitterService:
             }, None
 
         except Exception as e:
+            logger.error(f"Error getting Twitter content: {str(e)}", exc_info=True)
             return None, f"Error: {str(e)}"
         finally:
             await self._close_driver()
