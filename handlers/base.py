@@ -24,6 +24,7 @@ async def handle_links(message: Message, bot: Bot):
     url = message.text.strip()
     try:
         if re.search(PLATFORMS["twitter"], url, re.IGNORECASE) and any(p in url for p in TWITTER_PATTERNS):
+            await message.answer("🔄 Подготовка к загрузке Twitter (до 500 сек.)...")
             await handle_twitter_post(message, url, bot)
         elif 'vk.com' in url or 'vkvideo.ru' in url:
             if any(p in url for p in ['/video', '/clip']):
@@ -35,7 +36,7 @@ async def handle_links(message: Message, bot: Bot):
         elif re.search(PLATFORMS["instagram"], url, re.IGNORECASE):
             await handle_instagram(message, url,bot)
             return
-        elif 'youtube.com/shorts/' in url:
+        elif 'youtube.com/shorts' in url:
             await handle_video_download(message, url, bot)
         elif 'tiktok.com' in url:
             await handle_video_download(message, url, bot)

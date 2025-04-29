@@ -1,4 +1,4 @@
-from aiogram.types import Message, BufferedInputFile,InputMediaPhoto
+from aiogram.types import Message, BufferedInputFile, InputMediaPhoto, InputMediaVideo
 from services.instagram import InstagramDownloader
 from config import DOWNLOAD_DIR, MAX_FILE_SIZE, MAX_TELEGRAM_VIDEO_SIZE
 import os
@@ -30,9 +30,11 @@ async def handle_instagram(message: Message, url: str, bot: Bot):
                 for i in range(0, len(text), 4000):
                     await message.answer(f"📝 Текст {'(продолжение)' if i > 0 else ''}:\n{text[i:i+4000]}")
         
-        # Группируем изображения для отправки медиагруппой
+        logger.info(f"Text: {result['media']}")
+        # Группируем изображения и видео для отправки медиагруппой
         photos = [f for f in result['media'] if os.path.basename(f).lower().endswith(('.jpg', '.jpeg', '.png'))]
         videos = [f for f in result['media'] if os.path.basename(f).lower().endswith(('.mp4', '.mov'))]
+        logger.info(f"Found {len(photos)} photos and {len(videos)} videos")
         
         # Отправляем фото медиагруппой (если есть)
         if photos:
@@ -52,15 +54,23 @@ async def handle_instagram(message: Message, url: str, bot: Bot):
                 for photo in photos:
                     await downloader._safe_remove_file(photo)
         
-        
-        # Отправляем видео по одному
-        for video in videos:
+        # Отправляем видео медиагруппой (если есть)
+        if videos:
             try:
-                await _send_single_video(message, video, bot)
+                await _send_videos_as_group(message, videos, bot)
             except Exception as e:
-                logger.error(f"Failed to send video {video}: {str(e)}")
+                logger.error(f"Failed to send videos as group: {str(e)}")
+                # Если не получилось группой, пробуем по одному
+                for video in videos:
+                    try:
+                        await _send_single_video(message, video, bot)
+                    except Exception as e:
+                        logger.error(f"Failed to send video {video}: {str(e)}")
+                    finally:
+                        await downloader._safe_remove_file(video)
             finally:
-                await downloader._safe_remove_file(video)
+                for video in videos:
+                    await downloader._safe_remove_file(video)
         
         # Удаляем текстовый файл
         if result['text']:
@@ -89,6 +99,31 @@ async def _send_photos_as_group(message: Message, photo_paths: list, bot: Bot):
             )
     
     await bot.send_media_group(chat_id=message.chat.id, media=media_group)
+
+async def _send_videos_as_group(message: Message, video_paths: list, bot: Bot):
+    """Отправка группы видео одним сообщением"""
+    media_group = []
+    
+    for video_path in video_paths:
+        file_size = os.path.getsize(video_path) / (1024 * 1024)  # MB
+        
+        if file_size > MAX_TELEGRAM_VIDEO_SIZE:
+            await message.answer(f"📦 Видео слишком большое ({file_size:.1f}MB) и не будет отправлено")
+            continue
+        
+        filename = os.path.basename(video_path)
+        with open(video_path, 'rb') as f:
+            media_group.append(
+                InputMediaVideo(
+                    media=BufferedInputFile(
+                        file=f.read(),
+                        filename=filename
+                    )
+                )
+            )
+    
+    if media_group:  # Отправляем только если есть что отправлять
+        await bot.send_media_group(chat_id=message.chat.id, media=media_group)
 
 async def _send_single_photo(message: Message, photo_path: str, bot: Bot):
     """Отправка одного фото"""

@@ -620,16 +620,36 @@ class InstagramDownloader:
         return None, {}
 
     def _get_file_extension(self, url: str, item: dict) -> str:
-        """Определение расширения файла"""
+        """Определение расширения файла с учетом типа из API"""
+        # Сначала проверяем явное указание типа в данных API
+        media_type = item.get('type', '').lower()
+        
+        if media_type == 'photo':
+            # Для фото проверяем URL на наличие изображений
+            url_lower = url.lower()
+            if '.jpg' in url_lower or '.jpeg' in url_lower:
+                return '.jpg'
+            if '.png' in url_lower:
+                return '.png'
+            if '.webp' in url_lower:
+                return '.webp'
+            # По умолчанию для фото возвращаем jpg
+            return '.jpg'
+        
+        # Для видео или если тип не указан
         url_lower = url.lower()
         if '.mp4' in url_lower:
             return '.mp4'
+        if '.mov' in url_lower:
+            return '.mov'
         if '.jpg' in url_lower or '.jpeg' in url_lower:
             return '.jpg'
         if '.png' in url_lower:
             return '.png'
         if '.webp' in url_lower:
             return '.webp'
+    
+        # Если ничего не найдено, возвращаем mp4 как fallback
         return '.mp4'
 
     def _extract_shortcode(self, url: str) -> Optional[str]:

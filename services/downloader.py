@@ -103,10 +103,12 @@ async def download_image(url: str) -> Optional[str]:
 
 async def download_media(url: str, message: Message, bot: Bot, platform: str = None) -> Optional[str]:
     """Универсальная функция загрузки"""
+    
     try:
+        
         progress_msg = await bot.send_message(
+            text="🔄 Подготовка к загрузке (до 500 сек.)",
             chat_id=message.chat.id,
-            text="🔄 Подготовка к загрузке (до 500 сек.)"
         )
 
         ydl_opts = {

@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 async def handle_video_download(message: types.Message, url: str,bot:Bot):
     """Обрабатывает запрос на скачивание видео"""
+    print(url)
     try:
         await message.answer("⏳ Подготовка к загрузке (до 500 сек.)...")
         filename = await download_video(url,message,bot)
