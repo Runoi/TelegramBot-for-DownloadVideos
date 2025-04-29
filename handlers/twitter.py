@@ -33,13 +33,13 @@ class TwitterHandler:
 
         except Exception as e:
             logger.error(f"Twitter error: {str(e)}", exc_info=True)
-            await message.answer(f"❌ Ошибка: {str(e)}")
+            await message.answer(f"❌ Ошибка в хэндлере: {str(e)}")
 
     async def _send_text(self, message: types.Message, text: str):
         """Отправка текста с форматированием"""
         if len(text) > 4000:
             text = text[:4000] + "... [текст обрезан]"
-        await message.answer(f"📝 <b>Текст поста:</b>\n{text}", parse_mode="HTML")
+        await message.answer(f"Текст поста:\n{text}")
 
     async def _handle_media(self, message: types.Message, media: dict, post_type: str, bot: Bot):
         """Обработка всех типов медиа"""
@@ -131,7 +131,7 @@ class TwitterHandler:
                 await bot.send_video(
                     chat_id=message.chat.id,
                     video=BufferedInputFile(f.read(), "twitter_video.mp4"),
-                    caption="🎥 Видео из Twitter, @prorusaver_bot",
+                    caption="Видео из Twitter, @prorusaver_bot",
                     supports_streaming=True
                 )
 

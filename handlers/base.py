@@ -24,8 +24,18 @@ async def handle_links(message: Message, bot: Bot):
     url = message.text.strip()
     try:
         if re.search(PLATFORMS["twitter"], url, re.IGNORECASE) and any(p in url for p in TWITTER_PATTERNS):
-            await message.answer("🔄 Подготовка к загрузке Twitter (до 500 сек.)...")
-            await handle_twitter_post(message, url, bot)
+            # Экранируем текст сообщения
+            status_msg = await message.answer(
+                "🔄 Подготовка к загрузке Twitter (до 500 сек.)...",
+                parse_mode=None
+            )
+            try:
+                await handle_twitter_post(message, url, bot)
+            finally:
+                try:
+                    await bot.delete_message(message.chat.id, status_msg.message_id)
+                except Exception as e:
+                    logger.error(f"Error deleting status message: {e}")
         elif 'vk.com' in url or 'vkvideo.ru' in url:
             if any(p in url for p in ['/video', '/clip']):
                 await handle_vk_video_download(message, url, bot)
