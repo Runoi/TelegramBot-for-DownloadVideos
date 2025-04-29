@@ -37,7 +37,7 @@ class TwitterHandler:
                     await self._send_text(message, content['text'])
                     #logger.debug("Текст поста успешно отправлен")
                 except Exception as text_error:
-                    #logger.error(f"Ошибка отправки текста: {str(text_error)}")
+                    pass#logger.error(f"Ошибка отправки текста: {str(text_error)}")
 
             # 3. Отправка медиа
             if content.get('media'):
