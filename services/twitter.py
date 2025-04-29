@@ -109,29 +109,17 @@ class TwitterService:
             WebDriverWait(self.driver, 30).until(
                 EC.presence_of_element_located((By.XPATH, '//article')))
             
-            # Определяем тип контента
-            post_type = 'text'
-            media = {'images': [], 'videos': []}
-            
-            # Проверяем наличие видео
-            video_elements = self.driver.find_elements(By.XPATH, '//video | //div[@data-testid="videoPlayer"]')
-            if video_elements:
-                post_type = 'video'
-                media['videos'].append(url)
-            
-            # Если не видео, проверяем изображения
-            if post_type != 'video':
-                img_elements = self.driver.find_elements(
-                    By.XPATH, '//div[@data-testid="tweetPhoto"]//img | //img[contains(@src, "pbs.twimg.com/media/")]')
-                if img_elements:
-                    post_type = 'photo'
-                    for img in img_elements:
-                        if src := img.get_attribute('src'):
-                            media['images'].append(self.normalize_image_url(src))
-            
-            # Получаем текст
+            # Получаем медиа и текст
+            media = await self._extract_media()
             text_elements = self.driver.find_elements(By.XPATH, '//div[@data-testid="tweetText"]')
             text = "\n".join([el.text for el in text_elements if el.text]) or None
+
+            # Определяем тип контента
+            post_type = 'text'
+            if media['videos']:
+                post_type = 'video'
+            elif media['images']:
+                post_type = 'photo'
 
             return {
                 'text': text,
@@ -204,30 +192,33 @@ class TwitterService:
             return None, f"Selenium parsing error: {str(e)}"
 
     def _extract_media(self) -> Dict:
-        """Извлечение медиа с исключением аватарок"""
+        """Извлечение медиа с правильным определением видео"""
         media = {'images': [], 'videos': []}
         
-        # Изображения только из медиа-контента
+        # 1. Извлекаем изображения
         img_elements = self.driver.find_elements(
             By.XPATH, 
-            '//div[@data-testid="tweetPhoto"]//img | '
-            '//img[contains(@src, "pbs.twimg.com/media/")]'
+            '//div[@data-testid="tweetPhoto"]//img | //img[contains(@src, "pbs.twimg.com/media/")]'
         )
-        
         for img in img_elements:
             if src := img.get_attribute('src'):
                 if '/media/' in src:  # Только медиа из поста
                     media['images'].append(self.normalize_image_url(src))
         
-        # Видео
-        video_elements = self.driver.find_elements(
-            By.XPATH, 
-            '//video | //div[@data-testid="videoPlayer"]'
+        # 2. Извлекаем видео (более точный способ)
+        video_containers = self.driver.find_elements(
+            By.XPATH,
+            '//div[@data-testid="videoPlayer"] | //video[contains(@src, "twimg.com")]'
         )
         
-        for video in video_elements:
-            if src := video.get_attribute('src') or video.get_attribute('poster'):
-                media['videos'].append(src.split('?')[0])
+        for container in video_containers:
+            # Пробуем разные атрибуты для получения видео
+            video_src = (container.get_attribute('src') or 
+                        container.get_attribute('data-video-url') or
+                        container.get_attribute('poster'))
+            
+            if video_src and 'video' in video_src:  # Более строгая проверка
+                media['videos'].append(video_src.split('?')[0])
         
         return media
 
