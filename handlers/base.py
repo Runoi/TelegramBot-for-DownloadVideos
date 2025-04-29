@@ -26,7 +26,7 @@ async def handle_links(message: Message, bot: Bot):
         if re.search(PLATFORMS["twitter"], url, re.IGNORECASE) and any(p in url for p in TWITTER_PATTERNS):
             # Экранируем текст сообщения
             status_msg = await message.answer(
-                "🔄 Подготовка к загрузке Twitter (до 500 сек.)...",
+                "Подготовка к загрузке Twitter (до 500 сек.)...",
                 parse_mode=None
             )
             try:
@@ -42,7 +42,7 @@ async def handle_links(message: Message, bot: Bot):
             elif any(p in url for p in ['wall-', '?w=wall']):
                 await handle_vk_post(message, url)
             else:
-                await message.answer("ℹ️ Укажите прямую ссылку на видео или пост VK")
+                await message.answer("Укажите прямую ссылку на видео или пост VK")
         elif re.search(PLATFORMS["instagram"], url, re.IGNORECASE):
             await handle_instagram(message, url,bot)
             return
@@ -52,7 +52,7 @@ async def handle_links(message: Message, bot: Bot):
             await handle_video_download(message, url, bot)
     except Exception as e:
         logger.error(f"Ошибка обработки ссылки: {str(e)}", exc_info=True)
-        await message.answer(f"⚠️ Ошибка: {str(e)}")
+        await message.answer(f"⚠️ Ошибка в base: {str(e)}")
 
 def register_base_handlers(dp):
     dp.message.register(start, Command("start"))
