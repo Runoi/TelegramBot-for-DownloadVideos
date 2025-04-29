@@ -16,24 +16,55 @@ class TwitterHandler:
     MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10MB
 
     async def handle_post(self, message: types.Message, url: str, bot: Bot):
-        """Основной обработчик Twitter-поста"""
+        """Основной обработчик Twitter-поста с улучшенной обработкой ошибок"""
         try:
+            logger.info(f"Начало обработки Twitter-поста: {url}")
+            
+            # 1. Получение контента
             twitter_service = TwitterService()
             content, error = await twitter_service.get_twitter_content(url)
+            
             if error or not content:
-                raise ValueError(error or "Не удалось получить контент")
+                error_msg = error or "Не удалось получить контент"
+                logger.error(f"Ошибка получения контента: {error_msg}")
+                raise ValueError(error_msg)
 
-            # Отправка текста
+            logger.debug(f"Полученный контент: {content}")
+
+            # 2. Отправка текста (если есть)
             if content.get('text'):
-                await self._send_text(message, content['text'])
+                try:
+                    await self._send_text(message, content['text'])
+                    logger.debug("Текст поста успешно отправлен")
+                except Exception as text_error:
+                    logger.error(f"Ошибка отправки текста: {str(text_error)}")
 
-            # Отправка медиа
+            # 3. Отправка медиа
             if content.get('media'):
-                await self._handle_media(message, content['media'], content.get('type', ''), bot)
+                try:
+                    await self._handle_media(
+                        message, 
+                        content['media'], 
+                        content.get('type', ''), 
+                        bot
+                    )
+                    logger.debug("Медиа успешно обработано")
+                except Exception as media_error:
+                    logger.error(f"Ошибка обработки медиа: {str(media_error)}")
+                    await message.answer("⚠️ Не удалось отправить медиа-контент")
 
+            logger.info("Обработка поста завершена успешно")
+
+        except ValueError as ve:
+            logger.error(f"Ошибка значений: {str(ve)}")
+            await message.answer(f"❌ {str(ve)}")
         except Exception as e:
-            logger.error(f"Twitter error: {str(e)}", exc_info=True)
-            await message.answer(f"❌ Ошибка в хэндлере: {str(e)}")
+            logger.critical(f"Критическая ошибка обработки: {str(e)}", exc_info=True)
+            await message.answer("💥 Произошла критическая ошибка при обработке поста")
+        finally:
+            # Очистка ресурсов при необходимости
+            if 'twitter_service' in locals():
+                await twitter_service._close_driver()
 
     async def _send_text(self, message: types.Message, text: str):
         """Отправка текста с форматированием"""
@@ -42,19 +73,39 @@ class TwitterHandler:
         await message.answer(f"Текст поста:\n{text}")
 
     async def _handle_media(self, message: types.Message, media: dict, post_type: str, bot: Bot):
-        """Обработка всех типов медиа"""
+        """Обработка всех типов медиа с улучшенной обработкой ошибок"""
         try:
-            # Обработка изображений
-            if media.get('images'):
-                await self._handle_images(message, media['images'], bot)
+            logger.info(f"Начало обработки медиа. Тип: {post_type}, данные: {media.keys()}")
 
-            # Обработка видео (только если тип поста - видео)
+            # 1. Обработка изображений (если есть)
+            if media.get('images'):
+                logger.debug(f"Найдены изображения: {len(media['images'])} шт.")
+                try:
+                    await self._handle_images(message, media['images'], bot)
+                    logger.info("Изображения успешно обработаны")
+                except Exception as img_error:
+                    logger.error(f"Ошибка обработки изображений: {str(img_error)}", exc_info=True)
+                    await message.answer("⚠️ Не удалось отправить изображения")
+
+            # 2. Обработка видео (только если тип поста - видео и есть ссылки)
             if post_type == 'video' and media.get('videos'):
-                await self._handle_video(message, media['videos'][0], bot)
+                logger.debug(f"Найдены видео: {len(media['videos'])} шт.")
+                if not media['videos'][0]:
+                    logger.warning("Пустая ссылка на видео")
+                    return
+
+                try:
+                    await self._handle_video(message, media['videos'][0], bot)
+                    logger.info("Видео успешно обработано")
+                except Exception as video_error:
+                    logger.error(f"Ошибка обработки видео: {str(video_error)}", exc_info=True)
+                    await message.answer("⚠️ Не удалось отправить видео")
 
         except Exception as e:
-            logger.error(f"Media error: {str(e)}")
-            await message.answer(f"❌ Ошибка медиа: {str(e)}")
+            logger.critical(f"Критическая ошибка в _handle_media: {str(e)}", exc_info=True)
+            await message.answer("💥 Произошла ошибка при обработке медиа")
+        finally:
+            logger.debug("Завершение обработки медиа")
 
     async def _handle_images(self, message: types.Message, image_urls: List[str], bot: Bot):
         """Загрузка и отправка изображений с фильтрацией аватарок"""
@@ -104,48 +155,96 @@ class TwitterHandler:
                     pass
 
     async def _handle_video(self, message: types.Message, video_url: str, bot: Bot):
-        """Загрузка и отправка видео"""
+        """Загрузка и отправка видео с улучшенной обработкой ошибок"""
         video_path = None
         compressed_path = None
         
         try:
-            # Скачивание видео
-            video_path = await download_twitter_video(video_url, message, bot)
-            if not video_path or not os.path.exists(video_path):
-                raise ValueError("Не удалось скачать видео")
+            # 1. Логирование начала процесса
+            logger.info(f"Начало обработки видео: {video_url}")
+            
+            # 2. Скачивание видео
+            try:
+                video_path = await download_twitter_video(video_url, message, bot)
+                if not video_path or not os.path.exists(video_path):
+                    raise ValueError("Не удалось скачать видео")
+                logger.debug(f"Видео скачано: {video_path} ({os.path.getsize(video_path)/1024/1024:.2f} MB)")
+            except Exception as download_error:
+                logger.error(f"Ошибка загрузки видео: {str(download_error)}")
+                raise ValueError("Ошибка загрузки видео с Twitter")
 
-            # Проверка размера и сжатие
-            if os.path.getsize(video_path) > MAX_FILE_SIZE:
+            # 3. Проверка и обработка размера видео
+            original_size = os.path.getsize(video_path)
+            needs_compression = original_size > MAX_FILE_SIZE
+            
+            if needs_compression:
+                logger.info(f"Видео требует сжатия (размер: {original_size/1024/1024:.2f} MB)")
                 compressed_path = f"{video_path}_compressed.mp4"
-                if await compress_video(video_path, compressed_path):
-                    if os.path.exists(compressed_path) and os.path.getsize(compressed_path) <= MAX_FILE_SIZE:
+                
+                try:
+                    success = await compress_video(video_path, compressed_path)
+                    if not success or not os.path.exists(compressed_path):
+                        raise ValueError("Ошибка сжатия видео")
+                    
+                    compressed_size = os.path.getsize(compressed_path)
+                    logger.debug(f"Видео сжато: {compressed_size/1024/1024:.2f} MB")
+                    
+                    if compressed_size > MAX_FILE_SIZE:
+                        raise ValueError(f"Видео слишком большое после сжатия ({compressed_size/1024/1024:.2f} MB)")
+                    
+                    # Удаляем оригинал, если сжатие успешно
+                    try:
                         os.remove(video_path)
                         video_path = compressed_path
-                    else:
-                        if compressed_path and os.path.exists(compressed_path):
+                    except Exception as remove_error:
+                        logger.error(f"Ошибка удаления оригинала: {str(remove_error)}")
+                        raise ValueError("Ошибка обработки видео")
+                        
+                except Exception as compression_error:
+                    logger.error(f"Ошибка сжатия: {str(compression_error)}")
+                    if compressed_path and os.path.exists(compressed_path):
+                        try:
                             os.remove(compressed_path)
-                        raise ValueError("Видео слишком большое после сжатия")
+                        except:
+                            pass
+                    raise ValueError("Не удалось обработать видео")
 
-            # Отправка видео
-            with open(video_path, 'rb') as f:
-                await bot.send_video(
-                    chat_id=message.chat.id,
-                    video=BufferedInputFile(f.read(), "twitter_video.mp4"),
-                    caption="Видео из Twitter, @prorusaver_bot",
-                    supports_streaming=True
-                )
+            # 4. Отправка видео в Telegram
+            try:
+                with open(video_path, 'rb') as f:
+                    await bot.send_video(
+                        chat_id=message.chat.id,
+                        video=BufferedInputFile(
+                            f.read(),
+                            filename="twitter_video.mp4"
+                        ),
+                        caption="Видео из Twitter, @prorusaver_bot",
+                        supports_streaming=True,
+                        width=1280,  # Оптимальное разрешение
+                        height=720,
+                        parse_mode="HTML"
+                    )
+                logger.info("Видео успешно отправлено")
+                
+            except Exception as send_error:
+                logger.error(f"Ошибка отправки видео: {str(send_error)}")
+                raise ValueError("Не удалось отправить видео")
 
+        except ValueError as ve:
+            logger.error(f"Ошибка обработки видео: {str(ve)}")
+            await message.answer(f"❌ {str(ve)}")
         except Exception as e:
-            logger.error(f"Video error: {str(e)}")
-            raise
+            logger.critical(f"Критическая ошибка: {str(e)}", exc_info=True)
+            await message.answer("💥 Произошла критическая ошибка при обработке видео")
         finally:
-            # Очистка временных файлов
+            # 5. Очистка временных файлов
             for path in [video_path, compressed_path]:
                 if path and os.path.exists(path):
                     try:
                         os.remove(path)
-                    except:
-                        pass
+                        logger.debug(f"Временный файл удален: {path}")
+                    except Exception as clean_error:
+                        logger.error(f"Ошибка удаления {path}: {str(clean_error)}")
 
 twitter_handler = TwitterHandler()
 

@@ -198,34 +198,27 @@ class TwitterService:
             return None, f"Selenium parsing error: {str(e)}"
 
     def _extract_media(self) -> Dict:
-        """Извлечение медиа с правильным определением видео"""
+        """Извлечение медиа с логированием"""
         media = {'images': [], 'videos': []}
         
-        # 1. Извлекаем изображения
-        img_elements = self.driver.find_elements(
+        # Логируем всю страницу для отладки
+        page_source = self.driver.page_source[:1000]  # Первые 1000 символов
+        logger.debug(f"Page source fragment: {page_source}")
+        
+        # Извлекаем видео
+        video_elements = self.driver.find_elements(
             By.XPATH, 
-            '//div[@data-testid="tweetPhoto"]//img | //img[contains(@src, "pbs.twimg.com/media/")]'
+            '//video | //div[@data-testid="videoPlayer"] | //div[@role="video"]'
         )
-        for img in img_elements:
-            if src := img.get_attribute('src'):
-                if '/media/' in src:  # Только медиа из поста
-                    media['images'].append(self.normalize_image_url(src))
+        logger.debug(f"Found {len(video_elements)} video elements")
         
-        # 2. Извлекаем видео (более точный способ)
-        video_containers = self.driver.find_elements(
-            By.XPATH,
-            '//div[@data-testid="videoPlayer"] | //video[contains(@src, "twimg.com")]'
-        )
+        for i, video in enumerate(video_elements):
+            src = video.get_attribute('src') or video.get_attribute('poster')
+            logger.debug(f"Video {i}: src={video.get_attribute('src')}, poster={video.get_attribute('poster')}")
+            if src:
+                media['videos'].append(src.split('?')[0])
         
-        for container in video_containers:
-            # Пробуем разные атрибуты для получения видео
-            video_src = (container.get_attribute('src') or 
-                        container.get_attribute('data-video-url') or
-                        container.get_attribute('poster'))
-            
-            if video_src and 'video' in video_src:  # Более строгая проверка
-                media['videos'].append(video_src.split('?')[0])
-        
+        logger.debug(f"Extracted media: {media}")
         return media
 
 # Глобальный экземпляр сервиса
