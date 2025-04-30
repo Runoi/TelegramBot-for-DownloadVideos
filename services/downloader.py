@@ -154,7 +154,7 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
         await bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=progress_msg.message_id,
-            text=f"❌ Ошибка: {str(e)}"
+            text=f"❌ Скорей всего, вы скачиваете не видео, а фото"
         )
         return None
     finally:
