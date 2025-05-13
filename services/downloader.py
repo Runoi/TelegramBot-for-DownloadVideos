@@ -117,7 +117,9 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
             'logger': DownloadLogger(),
             'retries': 3,
             'extract_flat': False,
-            'format': 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]'
+            'format': 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]',
+            'source-address': '0.0.0.0',         # Использовать все сетевые интерфейсы
+            'force-ipv4': True,                  # Принудительно использовать IPv4
         }
 
         if platform == 'twitter':
