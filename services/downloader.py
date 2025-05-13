@@ -120,6 +120,10 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
             'format': 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]',
             'source-address': '0.0.0.0',         # Использовать все сетевые интерфейсы
             'force-ipv4': True,                  # Принудительно использовать IPv4
+            'continuedl': True,  # Важно для Linux
+            'noprogress': False,
+            'noresizebuffer': True,
+            'http-chunk-size': '2M',  # Увеличьте для Linux
         }
 
         if platform == 'twitter':
