@@ -123,7 +123,21 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
             'continuedl': True,  # Важно для Linux
             'noprogress': False,
             'noresizebuffer': True,
-            'http-chunk-size': '2M',  # Увеличьте для Linux
+            'http-chunk-size': '6M',  # Увеличьте для Linux
+            'no_check_certificate': True,
+            'geo_bypass': True,
+            'geo_bypass_country': 'NL',  # Нидерланды
+            'extractor_args': {
+                'youtube': {
+                    'skip': ['dash', 'hls'],  # Упрощаем выбор формата
+                    'player_skip': ['configs'],
+                }
+            },
+            # Ускоряем инициализацию
+            'lazy_playlist': True,
+            'extract_flat': True,
+            'ignore_no_formats_error': True,
+            'noplaylist': True,
         }
 
         if platform == 'twitter':
