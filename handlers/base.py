@@ -37,7 +37,7 @@ async def handle_links(message: Message, bot: Bot):
         #         except Exception as e:
         #             logger.error(f"Error deleting status message: {e}")
         if 'vk.com' in url or 'vkvideo.ru' in url:
-            if any(p in url for p in ['/video', '/clip']):
+            if any(p in url for p in ['/clip']):
                 await handle_vk_video_download(message, url, bot)
             elif any(p in url for p in ['wall-', '?w=wall']):
                 await handle_vk_post(message, url)

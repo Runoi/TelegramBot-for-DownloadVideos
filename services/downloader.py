@@ -11,6 +11,34 @@ from config import DOWNLOAD_DIR
 
 logger = logging.getLogger(__name__)
 
+# В начале файла
+ytdl = yt_dlp.YoutubeDL({
+            'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
+            'retries': 3,
+            'extract_flat': False,
+            'format': 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]',
+            'source-address': '0.0.0.0',         # Использовать все сетевые интерфейсы
+            'force-ipv4': True,                  # Принудительно использовать IPv4
+            'continuedl': True,  # Важно для Linux
+            'noprogress': False,
+            'noresizebuffer': True,
+            'http-chunk-size': '6M',  # Увеличьте для Linux
+            'no_check_certificate': True,
+            'geo_bypass': True,
+            'geo_bypass_country': 'NL',  # Нидерланды
+            'extractor_args': {
+                'youtube': {
+                    'skip': ['dash', 'hls'],  # Упрощаем выбор формата
+                    'player_skip': ['configs'],
+                }
+            },
+            # Ускоряем инициализацию
+            'lazy_playlist': True,
+            'extract_flat': True,
+            'ignore_no_formats_error': True,
+            'noplaylist': True,
+})
+
 class DownloadLogger:
     def debug(self, msg):
         if msg.startswith('[download]'):
@@ -152,9 +180,9 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
             })
 
         def sync_download():
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=True)
-                return ydl.prepare_filename(info)
+            with ytdl:  # Используем предварительно инициализированный экземпляр
+                info = ytdl.extract_info(url, download=True)
+                return ytdl.prepare_filename(info)
 
         filename = await asyncio.get_event_loop().run_in_executor(
             None,
