@@ -14,11 +14,11 @@ async def handle_video_download(message: types.Message, url: str,bot:Bot):
         await message.answer("⏳ Подготовка к загрузке (до 500 сек.)...")
         filename = await download_video(url,message,bot)
         
-        if os.path.getsize(filename) > MAX_FILE_SIZE:
-            compressed = f"{filename}_compressed.mp4"
-            if await compress_video(filename, compressed):
-                os.remove(filename)
-                filename = compressed
+        # if os.path.getsize(filename) > MAX_FILE_SIZE:
+        #     compressed = f"{filename}_compressed.mp4"
+        #     if await compress_video(filename, compressed):
+        #         os.remove(filename)
+        #         filename = compressed
         
         with open(filename, 'rb') as f:
             await message.answer_video(

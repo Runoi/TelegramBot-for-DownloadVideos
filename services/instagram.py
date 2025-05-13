@@ -80,7 +80,7 @@ class InstagramDownloader:
             if text_file:
                 result['text'].append(text_file)
             if '/stories/' in url:
-                merge_all = True
+                merge_all = False
                 # Объединение медиа если требуется
                 if merge_all and len(media_files) > 1:
                     merged_file = await self._merge_all_media(media_files)
@@ -381,7 +381,7 @@ class InstagramDownloader:
             try:
                 if self.use_api:
                     result = await self._download_via_api(url)
-                    print(result)
+                   
                     # if not result[0]:
                     #     result = await self._download_via_instaloader(url)
                 else:
@@ -588,7 +588,15 @@ class InstagramDownloader:
         return files
 
     def _prepare_api_payload(self, url: str) -> Tuple[Optional[str], dict]:
-        """Подготовка запроса к API"""
+        """Подготовка запроса к API с поддержкой всех типов ссылок Instagram"""
+        # Обрабатываем короткие ссылки (https://instagram.com/s/...)
+        if '/s/' in url.lower():
+            return 'short_link', {
+                "type": "instagram",
+                "video_url": url
+            }
+        
+        # Обрабатываем сторис
         if '/stories/' in url:
             username, _ = self._extract_story_info(url)
             if not username:
@@ -599,25 +607,32 @@ class InstagramDownloader:
                 "video_url": url
             }
         
+        # Обрабатываем рилы
         if '/reel/' in url:
             return 'reel', {
                 "type": "instagram",
                 "video_url": url
             }
         
+        # Обрабатываем обычные посты
         if '/p/' in url:
             return 'post', {
                 "type": "instagram",
                 "video_url": url
             }
         
+        # Обрабатываем IGTV
         if '/tv/' in url:
             return 'igtv', {
                 "type": "instagram",
                 "video_url": url
             }
         
-        return None, {}
+        # Для всех остальных случаев (включая возможные новые форматы)
+        return 'generic', {
+            "type": "instagram",
+            "video_url": url
+        }
 
     def _get_file_extension(self, url: str, item: dict) -> str:
         """Определение расширения файла с учетом типа из API"""

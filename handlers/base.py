@@ -15,28 +15,28 @@ logger = logging.getLogger(__name__)
 async def start(message: Message):
     await message.answer(
         "🔻 Отправьте ссылку на видео с:\n"
-        "YouTube, Instagram, TikTok, Twitter/X\n"
-        "VK, Reddit\n\n"
+        "YouTube, Instagram,\n"
+        "VK\n\n"
         "Я скачаю и отправлю вам контент!"
     )
 
 async def handle_links(message: Message, bot: Bot):
     url = message.text.strip()
     try:
-        if re.search(PLATFORMS["twitter"], url, re.IGNORECASE) and any(p in url for p in TWITTER_PATTERNS):
-            # Экранируем текст сообщения
-            status_msg = await message.answer(
-                "Подготовка к загрузке Twitter (до 500 сек.)...",
-                parse_mode=None
-            )
-            try:
-                await handle_twitter_post(message, url, bot)
-            finally:
-                try:
-                    await bot.delete_message(message.chat.id, status_msg.message_id)
-                except Exception as e:
-                    logger.error(f"Error deleting status message: {e}")
-        elif 'vk.com' in url or 'vkvideo.ru' in url:
+        # if re.search(PLATFORMS["twitter"], url, re.IGNORECASE) and any(p in url for p in TWITTER_PATTERNS):
+        #     # Экранируем текст сообщения
+        #     status_msg = await message.answer(
+        #         "Подготовка к загрузке Twitter (до 500 сек.)...",
+        #         parse_mode=None
+        #     )
+        #     try:
+        #         await handle_twitter_post(message, url, bot)
+        #     finally:
+        #         try:
+        #             await bot.delete_message(message.chat.id, status_msg.message_id)
+        #         except Exception as e:
+        #             logger.error(f"Error deleting status message: {e}")
+        if 'vk.com' in url or 'vkvideo.ru' in url:
             if any(p in url for p in ['/video', '/clip']):
                 await handle_vk_video_download(message, url, bot)
             elif any(p in url for p in ['wall-', '?w=wall']):
@@ -48,8 +48,8 @@ async def handle_links(message: Message, bot: Bot):
             return
         elif 'youtube.com/shorts' in url:
             await handle_video_download(message, url, bot)
-        elif 'tiktok.com' in url:
-            await handle_video_download(message, url, bot)
+        else:
+            await message.answer('Данная платформа не поддерживается')
     except Exception as e:
         logger.error(f"Ошибка обработки ссылки: {str(e)}", exc_info=True)
         await message.answer(f"⚠️ Ошибка в base: {str(e)}")
