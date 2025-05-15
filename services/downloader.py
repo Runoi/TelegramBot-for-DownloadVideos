@@ -22,14 +22,15 @@ ytdl = yt_dlp.YoutubeDL({
             'continuedl': True,  # Важно для Linux
             'noprogress': False,
             'noresizebuffer': True,
-            'http-chunk-size': '6M',  # Увеличьте для Linux
+            'youtube_skip_dash_manifest': True,
+            'http-chunk-size': '32M',  # Увеличьте для Linux
             'no_check_certificate': True,
             'geo_bypass': True,
             'geo_bypass_country': 'NL',  # Нидерланды
             'extractor_args': {
                 'youtube': {
                     'skip': ['dash', 'hls'],  # Упрощаем выбор формата
-                    'player_skip': ['configs'],
+                    'player_skip': ['configs','webpage'],
                 }
             },
             # Ускоряем инициализацию
