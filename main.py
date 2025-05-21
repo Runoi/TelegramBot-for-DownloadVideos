@@ -5,18 +5,15 @@ import logging
 import sys
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
-from aiogram.filters import Command
 from aiogram.enums import ParseMode
 from config import BOT_TOKEN
-from handlers.base import handle_links, start
-from services.selenium import twitter_parser
+from handlers.base import register_base_handlers
 
-# Настройка кодировки UTF-8 для всей системы
+# Настройка кодировки и логирования
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
-# Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -29,37 +26,29 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 async def on_startup():
-    """Действия при запуске бота"""
-    logger.info("Starting bot...")
+    logger.info("Бот запущен")
 
 async def on_shutdown():
-    """Действия при остановке бота"""
-    logger.info("Shutting down...")
-    await twitter_parser._close_driver()
-    logger.info("Bot stopped")
+    logger.info("Бот остановлен")
 
 async def main():
-    # Инициализация бота с настройками по умолчанию
     bot = Bot(
         token=BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
+    # Убедитесь, что предыдущие сессии закрыты
+    await bot.delete_webhook(drop_pending_updates=True)
     dp = Dispatcher()
 
-   
-    # Регистрация обработчиков
-    dp.message.register(start, Command("start"))
-    dp.message.register(handle_links)
-
-    # События запуска/остановки
     dp.startup.register(on_startup)
     dp.shutdown.register(on_shutdown)
+    register_base_handlers(dp)
 
     try:
-        logger.info("Bot is running...")
+        logger.info("Бот запускается...")
         await dp.start_polling(bot)
     except Exception as e:
-        logger.critical(f"Fatal error: {str(e)}", exc_info=True)
+        logger.critical(f"Критическая ошибка: {str(e)}", exc_info=True)
     finally:
         await bot.session.close()
 
@@ -67,6 +56,6 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("Bot stopped by user")
+        logger.info("Бот остановлен пользователем")
     except Exception as e:
-        logger.critical(f"Unexpected error: {str(e)}", exc_info=True)
+        logger.critical(f"Неожиданная ошибка: {str(e)}", exc_info=True)

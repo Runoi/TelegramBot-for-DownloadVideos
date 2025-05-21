@@ -66,13 +66,10 @@ MAX_PARALLEL_MERGES = 2  # Безопасное значение
 MAX_API_REQUESTS_PER_MIN = 30    # Лимит запросов к Instagram API
 PHOTO_DURATION = 3  # Длительность фото в объединенном видео (сек)
 MAX_BOT_REQUESTS_PER_SEC = 20  # Лимит Telegram API
-# Настройки прокси
-PROXY_SETTINGS = {
-    'test_urls': [
-        "https://www.instagram.com",
-        "https://api.ipify.org?format=json",
-        "https://www.google.com"
-    ],
-    'timeout': 15
-}
+
+CHANNEL_ID = "@hassanmaxim"
+SUPPORT_LINK = "https://t.me/dropsupport"  # Ссылка на поддержку
+NEURAL_NETWORK_POST = "https://t.me/hassanmaxim/84"  # Ссылка на пост про нейросети
+CHANNEL_LINK = "https://t.me/hassanmaxim"
+
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
