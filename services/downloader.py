@@ -13,16 +13,27 @@ logger = logging.getLogger(__name__)
 
 # В начале файла
 ytdl = yt_dlp.YoutubeDL({
-            'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
-            'retries': 3,
-            'format': 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]',
-            'http-chunk-size': '64M',  # Увеличьте для Linux
-            'extractor_args': {
-                'youtube': {
-                    'skip': ['dash', 'hls'],  # Упрощаем выбор формата
-                    'player_skip': ['configs','webpage'],
-                }
-            },
+    'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
+    'retries': 3,
+    'format': 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+    'http-chunk-size': '64M',
+    'no_check_certificate': True,
+    'geo_bypass': True,
+    'force-ipv4': True,
+    'extractor_args': {
+        'youtube': {
+            'skip': ['dash', 'hls', 'manifest'],
+            'player_skip': ['configs', 'webpage', 'js'],
+            'player_client': 'android',  # Используем мобильный клиент
+        }
+    },
+    'http_headers': {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+    },
+    'ignore_no_formats_error': True,
+    'quiet': False,
+    'no_warnings': False,
 })
 
 class DownloadLogger:
