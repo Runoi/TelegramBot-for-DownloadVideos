@@ -8,28 +8,16 @@ from typing import Optional
 from aiogram import Bot
 from aiogram.types import Message
 from config import DOWNLOAD_DIR
+import json
+from http.cookiejar import MozillaCookieJar
 
 logger = logging.getLogger(__name__)
 
+
+
 # В начале файла
 ytdl = yt_dlp.YoutubeDL({
-        'outtmpl': os.path.join(DOWNLOAD_DIR, 'vk_%(id)s.%(ext)s'),
-        'quiet': False,
-        'no_warnings': False,
-        'retries': 3,
-        'socket_timeout': 30,
-        'extract_flat': False,
-        'referer': 'https://vk.com/',
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
-        },
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        'cookiefile': None,  # Явно отключаем сохранение cookies
-        'no_cookies': True,   # Запрещаем yt-dlp использовать cookies, если не указан файл
-        'merge_output_format': 'mp4',
-        'windows_filenames': True,
-        'restrictfilenames': True
+    'outtmpl': os.path.join('downloads', '%(id)s.%(ext)s')
     })
 
 class DownloadLogger:
@@ -146,8 +134,7 @@ async def download_media(url: str, message: Message, bot: Bot, platform: str = N
             'noresizebuffer': True,
             'http-chunk-size': '6M',  # Увеличьте для Linux
             'no_check_certificate': True,
-            'geo_bypass': True,
-            'geo_bypass_country': 'NL',  # Нидерланды
+            
             'extractor_args': {
                 'youtube': {
                     'skip': ['dash', 'hls'],  # Упрощаем выбор формата
