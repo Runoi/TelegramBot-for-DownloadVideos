@@ -15,27 +15,14 @@ logger = logging.getLogger(__name__)
 ytdl = yt_dlp.YoutubeDL({
             'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
             'retries': 3,
-            'extract_flat': False,
             'format': 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]',
-            'source-address': '0.0.0.0',         # Использовать все сетевые интерфейсы
-            'force-ipv4': True,                  # Принудительно использовать IPv4
-            'continuedl': True,  # Важно для Linux
-            'noprogress': False,
-            'noresizebuffer': True,
-            'youtube_skip_dash_manifest': True,
             'http-chunk-size': '64M',  # Увеличьте для Linux
-            'no_check_certificate': True,
             'extractor_args': {
                 'youtube': {
                     'skip': ['dash', 'hls'],  # Упрощаем выбор формата
                     'player_skip': ['configs','webpage'],
                 }
             },
-            # Ускоряем инициализацию
-            'lazy_playlist': True,
-            'extract_flat': True,
-            'ignore_no_formats_error': True,
-            'noplaylist': True,
 })
 
 class DownloadLogger:
