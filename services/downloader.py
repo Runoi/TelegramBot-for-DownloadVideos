@@ -17,9 +17,13 @@ logger = logging.getLogger(__name__)
 
 # В начале файла
 ytdl = yt_dlp.YoutubeDL({
-    'outtmpl': os.path.join('downloads', '%(id)s.%(ext)s'),
-    
-    })
+    'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
+    'hls_use_mpegts': True,
+    'fragment_retries': 10,
+    'retries': 10,
+    'skip_unavailable_fragments': False,
+    'keep_fragments': False,
+})
 
 class DownloadLogger:
     def debug(self, msg):
