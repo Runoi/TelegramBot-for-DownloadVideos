@@ -13,27 +13,24 @@ logger = logging.getLogger(__name__)
 
 # В начале файла
 ytdl = yt_dlp.YoutubeDL({
-    'outtmpl': os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s'),
-    'retries': 3,
-    'format': 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-    'http-chunk-size': '64M',
-    'no_check_certificate': True,
-    'geo_bypass': True,
-    'force-ipv4': True,
-    'extractor_args': {
-        'youtube': {
-            'skip': ['dash', 'hls', 'manifest'],
-            'player_skip': ['configs', 'webpage', 'js'],
-        }
-    },
-    'http_headers': {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-    },
-    'ignore_no_formats_error': True,
-    'quiet': False,
-    'no_warnings': False,
-})
+        'outtmpl': os.path.join(DOWNLOAD_DIR, 'vk_%(id)s.%(ext)s'),
+        'quiet': False,
+        'no_warnings': False,
+        'retries': 3,
+        'socket_timeout': 30,
+        'extract_flat': False,
+        'referer': 'https://vk.com/',
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7'
+        },
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'cookiefile': None,  # Явно отключаем сохранение cookies
+        'no_cookies': True,   # Запрещаем yt-dlp использовать cookies, если не указан файл
+        'merge_output_format': 'mp4',
+        'windows_filenames': True,
+        'restrictfilenames': True
+    })
 
 class DownloadLogger:
     def debug(self, msg):
