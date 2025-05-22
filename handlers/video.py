@@ -28,6 +28,7 @@ async def handle_video_download(message: types.Message, url: str,bot:Bot):
         os.remove(filename)
         
     except Exception as e:
-        await message.answer(f"❌ Ошибка: {str(e)}")
+        logger.info(str(e))
+        await message.answer(f"Что-то пошло не так, попробуйте снова")
         if 'filename' in locals() and os.path.exists(filename):
             os.remove(filename)
