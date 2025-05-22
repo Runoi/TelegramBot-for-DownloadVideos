@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 # В начале файла
 ytdl = yt_dlp.YoutubeDL({
-    'outtmpl': os.path.join('downloads', '%(id)s.%(ext)s')
+    'outtmpl': os.path.join('downloads', '%(id)s.%(ext)s'),
+    'http-chunk-size': '128M'
     })
 
 class DownloadLogger:
