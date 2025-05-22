@@ -24,7 +24,6 @@ ytdl = yt_dlp.YoutubeDL({
         'youtube': {
             'skip': ['dash', 'hls', 'manifest'],
             'player_skip': ['configs', 'webpage', 'js'],
-            'player_client': 'android',  # Используем мобильный клиент
         }
     },
     'http_headers': {
