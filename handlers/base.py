@@ -10,9 +10,39 @@ from handlers.vk import handle_vk_post
 from handlers.video import handle_video_download
 from handlers.vk_video import handle_vk_video_download
 import logging
+from datetime import datetime, timedelta
+import redis
+import json
 
 logger = logging.getLogger(__name__)
 router = Router()
+
+# Подключение к Redis
+redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
+
+def is_user_allowed(user_id: int) -> bool:
+    """
+    Проверяет, может ли пользователь выполнить скачивание.
+    Не более 2 скачиваний за 10 минут.
+    """
+    key = f"user:{user_id}:downloads"
+    now = datetime.now()
+    ten_minutes_ago = now - timedelta(minutes=10)
+
+    # Получаем список временных меток скачиваний
+    downloads = redis_client.lrange(key, 0, -1)
+    downloads = [datetime.fromisoformat(d.decode()) for d in downloads]
+
+    # Фильтруем скачивания за последние 10 минут
+    recent_downloads = [d for d in downloads if d >= ten_minutes_ago]
+
+    if len(recent_downloads) >= 2:
+        return False
+
+    # Добавляем текущее скачивание
+    redis_client.rpush(key, now.isoformat())
+    redis_client.expire(key, 600)  # Устанавливаем TTL на 10 минут
+    return True
 
 class UserState(StatesGroup):
     waiting_instagram = State()
@@ -116,6 +146,14 @@ async def back_to_main_handler(callback: CallbackQuery, state: FSMContext):
 
 @router.message(UserState.waiting_instagram, F.text)
 async def handle_instagram_link(message: Message, bot: Bot, state: FSMContext):
+
+    if not is_user_allowed(message.from_user.id):
+        await message.answer(
+            "Вы превысили лимит скачиваний (2 за 10 минут). Попробуйте позже.",
+            reply_markup=get_back_keyboard()
+        )
+        return
+    
     url = message.text.strip()
     if not re.search(PLATFORMS["instagram"], url, re.IGNORECASE):
         await message.answer(
@@ -130,6 +168,13 @@ async def handle_instagram_link(message: Message, bot: Bot, state: FSMContext):
 
 @router.message(UserState.waiting_vk, F.text)
 async def handle_vk_link(message: Message, bot: Bot, state: FSMContext):
+    if not is_user_allowed(message.from_user.id):
+        await message.answer(
+            "Вы превысили лимит скачиваний (2 за 10 минут). Попробуйте позже.",
+            reply_markup=get_back_keyboard()
+        )
+        return
+    
     url = message.text.strip()
     if not re.search(PLATFORMS["vk"], url, re.IGNORECASE):
         await message.answer(
@@ -150,6 +195,13 @@ async def handle_vk_link(message: Message, bot: Bot, state: FSMContext):
 
 @router.message(UserState.waiting_youtube, F.text)
 async def handle_youtube_link(message: Message, bot: Bot, state: FSMContext):
+    if not is_user_allowed(message.from_user.id):
+        await message.answer(
+            "Вы превысили лимит скачиваний (2 за 10 минут). Попробуйте позже.",
+            reply_markup=get_back_keyboard()
+        )
+        return
+    
     url = message.text.strip()
     if not re.search(PLATFORMS["youtube"], url, re.IGNORECASE):
         await message.answer(
