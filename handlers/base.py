@@ -27,7 +27,7 @@ def is_user_allowed(user_id: int) -> bool:
     """
     key = f"user:{user_id}:downloads"
     now = datetime.now()
-    ten_minutes_ago = now - timedelta(minutes=10)
+    ten_minutes_ago = now - timedelta(minutes=5)
 
     # Получаем список временных меток скачиваний
     downloads = redis_client.lrange(key, 0, -1)
@@ -149,7 +149,7 @@ async def handle_instagram_link(message: Message, bot: Bot, state: FSMContext):
 
     if not is_user_allowed(message.from_user.id):
         await message.answer(
-            "Вы превысили лимит скачиваний (2 за 10 минут). Попробуйте позже.",
+            "Вы привысили лимит скачиваний. Подождите 300 сек и ваш лимит будет снова обновлен👌🏻",
             reply_markup=get_back_keyboard()
         )
         return
@@ -170,7 +170,7 @@ async def handle_instagram_link(message: Message, bot: Bot, state: FSMContext):
 async def handle_vk_link(message: Message, bot: Bot, state: FSMContext):
     if not is_user_allowed(message.from_user.id):
         await message.answer(
-            "Вы превысили лимит скачиваний (2 за 10 минут). Попробуйте позже.",
+            "Вы привысили лимит скачиваний. Подождите 300 сек и ваш лимит будет снова обновлен👌🏻",
             reply_markup=get_back_keyboard()
         )
         return
@@ -197,7 +197,7 @@ async def handle_vk_link(message: Message, bot: Bot, state: FSMContext):
 async def handle_youtube_link(message: Message, bot: Bot, state: FSMContext):
     if not is_user_allowed(message.from_user.id):
         await message.answer(
-            "Вы превысили лимит скачиваний (2 за 10 минут). Попробуйте позже.",
+            "Вы привысили лимит скачиваний. Подождите 300 сек и ваш лимит будет снова обновлен👌🏻",
             reply_markup=get_back_keyboard()
         )
         return
